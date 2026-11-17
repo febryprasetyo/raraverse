@@ -6,6 +6,7 @@ import {
   Activity,
   CalendarClock,
   Film,
+  Images,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -21,6 +22,7 @@ export const NAV_ITEMS = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/products', label: 'Produk & Kampanye', icon: Package },
   { href: '/studio', label: 'Content Studio', icon: Film },
+  { href: '/gallery', label: 'Galeri Konten', icon: Images },
   { href: '/scheduler', label: 'Scheduler & DM', icon: CalendarClock },
   { href: '/health', label: 'System Health', icon: Activity },
 ] as const;

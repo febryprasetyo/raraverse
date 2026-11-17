@@ -222,6 +222,14 @@ export class MockContentAssetRepository implements IContentAssetRepository {
     this.items[idx] = updated;
     return updated;
   }
+
+  async deleteContentAsset(id: string): Promise<void> {
+    const idx = this.items.findIndex((item) => item.id === id);
+    if (idx === -1) {
+      throw new NotFoundError(`ContentAsset '${id}' not found`);
+    }
+    this.items.splice(idx, 1);
+  }
 }
 
 export class MockDmLogRepository implements IDmLogRepository {
@@ -312,6 +320,14 @@ export class MockPublishJobRepository implements IPublishJobRepository {
     };
     this.items[idx] = updated;
     return updated;
+  }
+
+  async deleteContentAsset(id: string): Promise<void> {
+    const idx = this.items.findIndex((item) => item.id === id);
+    if (idx === -1) {
+      throw new NotFoundError(`ContentAsset '${id}' not found`);
+    }
+    this.items.splice(idx, 1);
   }
 }
 

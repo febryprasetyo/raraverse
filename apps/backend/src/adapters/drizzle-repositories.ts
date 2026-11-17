@@ -305,6 +305,16 @@ export class DrizzleContentAssetRepository implements IContentAssetRepository {
     }
     return mapContentAssetRow(row);
   }
+
+  async deleteContentAsset(id: string): Promise<void> {
+    const deleted = await this.db
+      .delete(contentAssets)
+      .where(eq(contentAssets.id, id))
+      .returning({ id: contentAssets.id });
+    if (deleted.length === 0) {
+      throw new NotFoundError(`ContentAsset '${id}' not found`);
+    }
+  }
 }
 
 export class DrizzlePublishJobRepository implements IPublishJobRepository {

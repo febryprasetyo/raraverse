@@ -101,6 +101,7 @@ export interface IContentAssetRepository {
   getContentAssetById(id: string): Promise<ContentAsset | null>;
   createContentAsset(input: CreateContentAssetInput): Promise<ContentAsset>;
   updateContentAsset(id: string, patch: UpdateContentAssetInput): Promise<ContentAsset>;
+  deleteContentAsset(id: string): Promise<void>;
 }
 
 export interface CreateDmLogInput {

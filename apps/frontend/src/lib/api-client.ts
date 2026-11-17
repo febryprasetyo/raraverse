@@ -161,6 +161,12 @@ export function createBackendClient(options: ApiClientOptions) {
       ).asset;
     },
 
+    async deleteContent(id: string): Promise<void> {
+      await requestJson(`/api/v1/content/${id}`, z.object({ ok: z.literal(true) }), {
+        method: 'DELETE',
+      });
+    },
+
     async listPublishJobs(): Promise<PublishJobRecord[]> {
       return (await requestJson('/api/v1/publish-jobs', PublishJobsResponseSchema)).items;
     },

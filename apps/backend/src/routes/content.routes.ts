@@ -136,6 +136,23 @@ export function registerContentRoutes(
     }
   );
 
+  typed.delete(
+    '/api/v1/content/:id',
+    {
+      preHandler: [adminGuard],
+      schema: {
+        params: z.object({ id: z.string().uuid() }),
+        response: {
+          200: z.object({ ok: z.literal(true) }),
+        },
+      },
+    },
+    async (request) => {
+      await container.contentAssets.deleteContentAsset(request.params.id);
+      return { ok: true as const };
+    }
+  );
+
   typed.post(
     '/api/v1/assets/upload-url',
     {
