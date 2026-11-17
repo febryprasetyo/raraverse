@@ -20,14 +20,16 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   if (!token) {
     return (
-      <div className="mx-auto max-w-md rounded-xl border border-slate-800 bg-slate-900/75 p-6 text-center">
-        <h1 className="text-lg font-bold text-white">Autentikasi Admin Diperlukan</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Silakan masuk dengan token admin backend untuk mengakses control plane ebieshop.
+      <div className="mx-auto max-w-md rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-6 text-center shadow-sm">
+        <h1 className="text-base font-bold text-[var(--text-primary)]">
+          Autentikasi Admin Diperlukan
+        </h1>
+        <p className="mt-2 text-xs text-[var(--text-muted)]">
+          Silakan masuk dengan token admin backend untuk mengakses Revenlo Affiliate Dashboard.
         </p>
         <Link
           href="/login"
-          className="mt-5 inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          className="mt-5 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
         >
           Buka Halaman Login
         </Link>

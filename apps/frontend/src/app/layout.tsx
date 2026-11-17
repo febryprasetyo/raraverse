@@ -5,15 +5,15 @@ import { AuthProvider } from '@/lib/auth-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ebieshop — Affiliate Automation Dashboard',
+  title: 'Revenlo × ebieshop — Affiliate Analytics & Automation',
   description:
-    'Control plane untuk kurasi produk Kalodata, studio konten 9:16, antrean publish, dan evaluasi mingguan.',
+    'Pusat kendali analitik afiliasi, performa tautan kampanye, kurasi produk, studio konten 9:16, dan pencairan komisi.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="id">
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+    <html lang="id" suppressHydrationWarning>
+      <body className="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased">
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>
