@@ -42,14 +42,44 @@ export async function startWorkerRuntime() {
     'local-video-render',
     async (job) => {
       const parsed = LocalVideoRenderJobSchema.parse(job.data);
-      return processLocalVideoRender(parsed, {
+      const result = await processLocalVideoRender(parsed, {
         ttsProvider: selectTtsProvider(parsed.ttsProvider),
         vpsApiUrl: env.VPS_API_URL,
         workerSecret: env.WORKER_SHARED_SECRET,
       });
+
+      const completeRes = await fetch(
+        `${env.VPS_API_URL.replace(/\/$/, '')}/api/v1/content/${parsed.contentAssetId}/render-complete`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${env.WORKER_SHARED_SECRET}`,
+          },
+          body: JSON.stringify({
+            videoR2Key: result.videoR2Key,
+            audioR2Key: result.audioR2Key,
+            subtitleR2Key: result.subtitleR2Key,
+            videoSha256: result.videoSha256,
+            durationSec: result.durationSec,
+          }),
+        }
+      );
+      if (!completeRes.ok) {
+        throw new Error(`Failed to report render-complete (${completeRes.status})`);
+      }
+
+      return result;
     },
     { connection, concurrency: 1 }
   );
+
+  renderWorker.on('completed', (job) => {
+    console.log(`[ebieshop-worker] Render completed: ${job.id}`);
+  });
+  renderWorker.on('failed', (job, err) => {
+    console.error(`[ebieshop-worker] Render failed (${job?.id}):`, err.message);
+  });
 
   const playwrightWorker = new Worker(
     'local-playwright-publish',

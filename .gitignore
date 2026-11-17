@@ -16,6 +16,7 @@ docs/api.md
 # Playwright & Local Media
 storageState*.json
 raw_media_dir/
+.local-storage/
 *.mp4
 *.mp3
 *.srt

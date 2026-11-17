@@ -116,13 +116,19 @@ export class R2Presigner implements IStoragePresigner {
 }
 
 export class MockStoragePresigner implements IStoragePresigner {
+  private readonly apiBaseUrl: string;
+
+  constructor(apiBaseUrl = 'http://127.0.0.1:3001') {
+    this.apiBaseUrl = apiBaseUrl.replace(/\/$/, '');
+  }
+
   createPutUrl(input: PresignPutInput): PresignPutResult {
     const expiresInSec = input.expiresInSec ?? 900;
     const normalizedKey = input.key.replace(/^\/+/, '');
     return {
-      uploadUrl: `http://127.0.0.1:9000/ebieshop-mock/${normalizedKey}?mock-sig=1`,
+      uploadUrl: `${this.apiBaseUrl}/api/v1/assets/local-upload/${normalizedKey}`,
       r2Key: normalizedKey,
-      publicUrl: `http://127.0.0.1:9000/ebieshop-mock/${normalizedKey}`,
+      publicUrl: `${this.apiBaseUrl}/api/v1/assets/local-file/${normalizedKey}`,
       expiresInSec,
     };
   }

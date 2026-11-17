@@ -233,17 +233,31 @@ export function ContentStudio({
               />
               {/* 9:16 video canvas intentionally uses dark cinema frame */}
               <div className="relative mx-auto aspect-[9/16] w-full max-w-[290px] overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
-                <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
-                    9:16 Vertical Preview
-                  </p>
-                  <p className="mt-2 text-sm font-bold text-white">
-                    {activeAsset.scriptJson.hook}
-                  </p>
-                  <p className="mt-4 text-xs text-slate-400">
-                    {activeAsset.videoR2Key ?? 'Menunggu hasil render FFmpeg lokal...'}
-                  </p>
-                </div>
+                {activeAsset.videoR2Key ? (
+                  <video
+                    key={activeAsset.videoR2Key}
+                    src={
+                      process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL
+                        ? `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/${activeAsset.videoR2Key}`
+                        : `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001').replace(/\/$/, '')}/api/v1/assets/local-file/${activeAsset.videoR2Key}`
+                    }
+                    controls
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
+                      9:16 Vertical Preview
+                    </p>
+                    <p className="mt-2 text-sm font-bold text-white">
+                      {activeAsset.scriptJson.hook}
+                    </p>
+                    <p className="mt-4 text-xs text-slate-400">
+                      Menunggu hasil render FFmpeg lokal...
+                    </p>
+                  </div>
+                )}
 
                 {showSafeZone ? (
                   <div

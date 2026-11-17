@@ -1,3 +1,6 @@
+import { createReadStream } from 'node:fs';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { ContentAssetSchema, ContentStatusSchema } from '@ebieshop/shared';
@@ -5,6 +8,8 @@ import { z } from 'zod';
 import type { AppContainer } from '../container.js';
 import { NotFoundError } from '../errors.js';
 import type { QueueRegistry } from '../queues/registry.js';
+
+const LOCAL_STORAGE_ROOT = resolve(process.cwd(), '.local-storage');
 
 const GenerateContentBodySchema = z.object({
   productId: z.string().uuid(),
@@ -156,4 +161,90 @@ export function registerContentRoutes(
       });
     }
   );
+
+  typed.post(
+    '/api/v1/content/:id/render-complete',
+    {
+      preHandler: [workerGuard],
+      schema: {
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({
+          videoR2Key: z.string().min(1),
+          audioR2Key: z.string().min(1),
+          subtitleR2Key: z.string().min(1),
+          videoSha256: z.string().length(64),
+          durationSec: z.number().positive(),
+        }),
+        response: {
+          200: z.object({ asset: ContentAssetSchema }),
+        },
+      },
+    },
+    async (request) => {
+      const asset = await container.contentAssets.updateContentAsset(
+        request.params.id,
+        {
+          ...request.body,
+          status: 'PENDING_REVIEW',
+        }
+      );
+      return { asset };
+    }
+  );
+
+  // Local dev storage endpoints (used when R2 is not configured)
+  app.register(async (localScope) => {
+    localScope.addContentTypeParser(
+      ['video/mp4', 'audio/mpeg', 'application/x-subrip', 'application/octet-stream'],
+      { parseAs: 'buffer' },
+      (_req, body, done) => {
+        done(null, body);
+      }
+    );
+
+    localScope.put(
+      '/api/v1/assets/local-upload/renders/:assetId/:fileName',
+      async (request, reply) => {
+        const { assetId, fileName } = request.params as {
+          assetId: string;
+          fileName: string;
+        };
+        const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const targetDir = join(LOCAL_STORAGE_ROOT, 'renders', assetId);
+        await mkdir(targetDir, { recursive: true });
+        await writeFile(join(targetDir, safeName), request.body as Buffer);
+        return reply.status(200).send({ ok: true });
+      }
+    );
+
+    localScope.get(
+      '/api/v1/assets/local-file/renders/:assetId/:fileName',
+      async (request, reply) => {
+        const { assetId, fileName } = request.params as {
+          assetId: string;
+          fileName: string;
+        };
+        const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = join(LOCAL_STORAGE_ROOT, 'renders', assetId, safeName);
+        try {
+          const info = await stat(filePath);
+          const contentType = safeName.endsWith('.mp4')
+            ? 'video/mp4'
+            : safeName.endsWith('.mp3')
+              ? 'audio/mpeg'
+              : 'text/plain; charset=utf-8';
+          return reply
+            .header('Content-Type', contentType)
+            .header('Content-Length', info.size)
+            .send(createReadStream(filePath));
+        } catch {
+          if (container.env.R2_PUBLIC_BASE_URL) {
+            const targetUrl = `${container.env.R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/renders/${assetId}/${safeName}`;
+            return reply.redirect(targetUrl);
+          }
+          return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'File not found' } });
+        }
+      }
+    );
+  });
 }
