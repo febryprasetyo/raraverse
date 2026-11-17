@@ -13,6 +13,7 @@ import {
   DrizzleAnalyticsRepository,
   DrizzleContentAssetRepository,
   DrizzleDmLogRepository,
+  DrizzleOAuthTokenRepository,
   DrizzleProductRepository,
   DrizzlePublishJobRepository,
 } from './adapters/drizzle-repositories.js';
@@ -37,6 +38,7 @@ import {
   MockPublishJobRepository,
 } from './adapters/mock-adapters.js';
 import { MetaAutoDmProcessor } from './services/meta-auto-dm.js';
+import type { IOAuthTokenRepository } from './services/oauth-refresh.js';
 import {
   MockStoragePresigner,
   R2Presigner,
@@ -53,6 +55,7 @@ export interface AppContainer {
   contentAssets: IContentAssetRepository;
   publishJobs: IPublishJobRepository;
   dmLogs: IDmLogRepository;
+  oauthTokens?: IOAuthTokenRepository;
   metaClient: IMetaGraphClient;
   metaAutoDm: MetaAutoDmProcessor;
   analytics: IAnalyticsRepository;
@@ -98,6 +101,7 @@ export function createAppContainer(env: EnvConfig): AppContainer {
   let contentAssets: IContentAssetRepository;
   let publishJobs: IPublishJobRepository;
   let dmLogs: IDmLogRepository;
+  let oauthTokens: IOAuthTokenRepository | undefined;
   let analytics: IAnalyticsRepository;
   let storage: IStoragePresigner;
   let close = async () => {};
@@ -108,6 +112,7 @@ export function createAppContainer(env: EnvConfig): AppContainer {
     contentAssets = new DrizzleContentAssetRepository(db);
     publishJobs = new DrizzlePublishJobRepository(db);
     dmLogs = new DrizzleDmLogRepository(db);
+    oauthTokens = new DrizzleOAuthTokenRepository(db);
     analytics = new DrizzleAnalyticsRepository(db);
     storage =
       env.R2_ENDPOINT &&
@@ -160,6 +165,7 @@ export function createAppContainer(env: EnvConfig): AppContainer {
     contentAssets,
     publishJobs,
     dmLogs,
+    oauthTokens,
     metaClient,
     metaAutoDm,
     analytics,

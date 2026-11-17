@@ -5,10 +5,16 @@ import {
   desc,
   dmLogs,
   eq,
+  lte,
+  oauthTokens,
   productMetricsWeekly,
   products,
   publishJobs,
 } from '@ebieshop/db';
+import type {
+  IOAuthTokenRepository,
+  OAuthTokenRecord,
+} from '../services/oauth-refresh.js';
 import type {
   ContentAsset,
   ContentStatus,
@@ -455,6 +461,78 @@ export class DrizzleAnalyticsRepository implements IAnalyticsRepository {
           | 'PENDING'
           | null) ?? 'PENDING',
       })),
+    };
+  }
+}
+
+export class DrizzleOAuthTokenRepository implements IOAuthTokenRepository {
+  constructor(private readonly db: DbInstance) {}
+
+  async listExpiringWithinDays(days: number): Promise<OAuthTokenRecord[]> {
+    const cutoff = new Date(Date.now() + days * 86400_000);
+    const rows = await this.db
+      .select()
+      .from(oauthTokens)
+      .where(and(lte(oauthTokens.expiresAt, cutoff), eq(oauthTokens.needsReauth, false)));
+
+    return rows.map((row) => ({
+      id: row.id,
+      provider: row.provider === 'youtube' ? 'youtube' : 'meta',
+      accountLabel: row.accountLabel,
+      externalAccountId: row.externalAccountId,
+      encryptedAccessToken: row.encryptedAccessToken,
+      encryptedRefreshToken: row.encryptedRefreshToken,
+      tokenIv: row.tokenIv,
+      tokenAuthTag: row.tokenAuthTag,
+      expiresAt: row.expiresAt,
+      needsReauth: row.needsReauth,
+    }));
+  }
+
+  async updateToken(
+    id: string,
+    patch: Partial<OAuthTokenRecord> & { lastRefreshedAt?: Date }
+  ): Promise<OAuthTokenRecord> {
+    const [row] = await this.db
+      .update(oauthTokens)
+      .set({
+        ...(patch.encryptedAccessToken !== undefined
+          ? { encryptedAccessToken: patch.encryptedAccessToken }
+          : {}),
+        ...(patch.encryptedRefreshToken !== undefined
+          ? { encryptedRefreshToken: patch.encryptedRefreshToken }
+          : {}),
+        ...(patch.tokenIv !== undefined ? { tokenIv: patch.tokenIv } : {}),
+        ...(patch.tokenAuthTag !== undefined
+          ? { tokenAuthTag: patch.tokenAuthTag }
+          : {}),
+        ...(patch.expiresAt !== undefined ? { expiresAt: patch.expiresAt } : {}),
+        ...(patch.lastRefreshedAt !== undefined
+          ? { lastRefreshedAt: patch.lastRefreshedAt }
+          : {}),
+        ...(patch.needsReauth !== undefined
+          ? { needsReauth: patch.needsReauth }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(oauthTokens.id, id))
+      .returning();
+
+    if (!row) {
+      throw new NotFoundError(`OAuth token '${id}' not found`);
+    }
+
+    return {
+      id: row.id,
+      provider: row.provider === 'youtube' ? 'youtube' : 'meta',
+      accountLabel: row.accountLabel,
+      externalAccountId: row.externalAccountId,
+      encryptedAccessToken: row.encryptedAccessToken,
+      encryptedRefreshToken: row.encryptedRefreshToken,
+      tokenIv: row.tokenIv,
+      tokenAuthTag: row.tokenAuthTag,
+      expiresAt: row.expiresAt,
+      needsReauth: row.needsReauth,
     };
   }
 }

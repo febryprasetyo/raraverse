@@ -3,8 +3,16 @@ import {
   MetaWebhookPayloadSchema,
   PublishJobPayloadSchema,
 } from '@ebieshop/shared';
+import {
+  FbReelsPublisher,
+  IgReelsPublisher,
+  OfficialApiPublishProcessor,
+  YtShortsPublisher,
+  type IPlatformPublisher,
+} from '../adapters/official-publishers.js';
 import type { AppContainer } from '../container.js';
 import { QUEUE_NAMES, type QueueRegistry } from '../queues/registry.js';
+import { OAuthTokenRefreshService } from '../services/oauth-refresh.js';
 import { PRIME_TIME_SLOTS_WIB } from '../services/prime-time-scheduler.js';
 
 export interface BackendWorkerRuntime {
@@ -55,7 +63,35 @@ export function startBackendWorkers(
   container: AppContainer,
   registry: QueueRegistry
 ): BackendWorkerRuntime {
-  const { connection } = registry;
+  const { connection, env } = { connection: registry.connection, env: container.env };
+
+  const publicBaseUrl = env.R2_PUBLIC_BASE_URL ?? 'http://127.0.0.1:9000/ebieshop-mock';
+  const publishers: Partial<Record<string, IPlatformPublisher>> = {};
+  if (env.META_API_MODE === 'real' && env.META_PAGE_ACCESS_TOKEN && env.META_OWN_IG_USER_ID) {
+    publishers.IG_REELS = new IgReelsPublisher({
+      igUserId: env.META_OWN_IG_USER_ID,
+      accessToken: env.META_PAGE_ACCESS_TOKEN,
+      publicBaseUrl,
+    });
+  }
+  if (env.META_API_MODE === 'real' && env.META_PAGE_ACCESS_TOKEN && env.META_OWN_PAGE_ID) {
+    publishers.FB_REELS = new FbReelsPublisher({
+      pageId: env.META_OWN_PAGE_ID,
+      pageAccessToken: env.META_PAGE_ACCESS_TOKEN,
+      publicBaseUrl,
+    });
+  }
+  if (process.env.YOUTUBE_ACCESS_TOKEN) {
+    publishers.YT_SHORTS = new YtShortsPublisher({
+      accessToken: process.env.YOUTUBE_ACCESS_TOKEN,
+      publicBaseUrl,
+    });
+  }
+
+  const officialProcessor = new OfficialApiPublishProcessor(
+    container.publishJobs,
+    publishers
+  );
 
   const metaDmWorker = new Worker(
     QUEUE_NAMES.META_AUTO_DM,
@@ -70,7 +106,10 @@ export function startBackendWorkers(
     QUEUE_NAMES.OFFICIAL_API_PUBLISH,
     async (job) => {
       const payload = PublishJobPayloadSchema.parse(job.data);
-      await container.publishJobs.updatePublishJob(payload.publishJobId, {
+      if (publishers[payload.platform]) {
+        return officialProcessor.process(payload);
+      }
+      return container.publishJobs.updatePublishJob(payload.publishJobId, {
         status: 'PUBLISHED',
         publishedAt: new Date().toISOString(),
       });
@@ -81,8 +120,27 @@ export function startBackendWorkers(
   const oauthRefreshWorker = new Worker(
     QUEUE_NAMES.OAUTH_TOKEN_REFRESH,
     async () => {
-      // Triggered weekly; in real mode uses OAuthTokenRefreshService with Drizzle token repo
-      return { checkedAt: new Date().toISOString() };
+      const encryptionKeyHex = process.env.TOKEN_ENCRYPTION_KEY;
+      if (!container.oauthTokens || !encryptionKeyHex) {
+        return { skipped: true, checkedAt: new Date().toISOString() };
+      }
+      const service = new OAuthTokenRefreshService({
+        repo: container.oauthTokens,
+        encryptionKeyHex,
+        metaAppId: process.env.META_APP_ID,
+        metaAppSecret: env.META_APP_SECRET,
+        youtubeClientId: process.env.YOUTUBE_CLIENT_ID,
+        youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+      });
+      const summary = await service.refreshExpiringTokens(14);
+      if (summary.reauthRequiredIds.length > 0) {
+        await container.telegramAlerts.sendAlert({
+          severity: 'CRITICAL',
+          title: 'OAuth Token Membutuhkan Re-otorisasi',
+          body: `Token ID gagal refresh: ${summary.reauthRequiredIds.join(', ')}`,
+        });
+      }
+      return summary;
     },
     { connection }
   );
