@@ -233,8 +233,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         ) : null}
 
-        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
+        <main id="main-content" className="relative flex-1 overflow-x-hidden">
+          <div
+            aria-hidden="true"
+            className="ebie-hero-aura pointer-events-none absolute inset-x-0 top-0 h-64"
+          />
+          <div className="relative p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
       </div>
     </div>

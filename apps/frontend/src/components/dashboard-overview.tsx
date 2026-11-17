@@ -250,16 +250,16 @@ export function DashboardOverviewContent({
       <div
         role="tablist"
         aria-label="Tampilan Overview"
-        className="inline-flex rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-1"
+        className="inline-flex rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-1 shadow-sm"
       >
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'live'}
           onClick={() => setActiveTab('live')}
-          className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
             activeTab === 'live'
-              ? 'bg-slate-900 text-white dark:bg-emerald-600'
+              ? 'bg-slate-900 text-white shadow-sm dark:bg-emerald-600'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
@@ -270,9 +270,9 @@ export function DashboardOverviewContent({
           role="tab"
           aria-selected={activeTab === 'analytics'}
           onClick={() => setActiveTab('analytics')}
-          className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
             activeTab === 'analytics'
-              ? 'bg-slate-900 text-white dark:bg-emerald-600'
+              ? 'bg-slate-900 text-white shadow-sm dark:bg-emerald-600'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
@@ -338,20 +338,22 @@ export function DashboardOverviewContent({
 
           {/* KPI Summary Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
+            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 p-6 text-white shadow-[0_12px_32px_rgba(15,23,42,0.14)]">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-[var(--text-muted)]">
+                <p className="text-xs font-medium text-slate-300">
                   Estimasi Komisi
                 </p>
-                <Badge tone="success">Shopee / TikTok</Badge>
+                <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
+                  Shopee / TikTok
+                </span>
               </div>
-              <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+              <p className="tabular-nums mt-3 text-2xl font-bold tracking-tight text-white">
                 Rp{metrics.estCommissionIdr.toLocaleString('id-ID')}
               </p>
-              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+              <p className="mt-1.5 text-[11px] text-slate-300">
                 Akumulasi estimasi periode {dateRange}
               </p>
-            </Card>
+            </div>
 
             <Card>
               <div className="flex items-center justify-between">

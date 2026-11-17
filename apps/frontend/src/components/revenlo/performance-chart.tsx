@@ -12,6 +12,20 @@ export interface PerformancePoint {
   conversions: number;
 }
 
+function buildSmoothPath(points: Array<{ x: number; y: number }>): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0]!.x} ${points[0]!.y}`;
+
+  let path = `M ${points[0]!.x} ${points[0]!.y}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const curr = points[i]!;
+    const next = points[i + 1]!;
+    const midX = (curr.x + next.x) / 2;
+    path += ` C ${midX} ${curr.y}, ${midX} ${next.y}, ${next.x} ${next.y}`;
+  }
+  return path;
+}
+
 export function PerformanceChart({
   series,
   rangeLabel,
@@ -22,11 +36,11 @@ export function PerformanceChart({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const width = 680;
-  const height = 220;
-  const padLeft = 16;
-  const padRight = 16;
-  const padTop = 18;
-  const padBottom = 28;
+  const height = 230;
+  const padLeft = 18;
+  const padRight = 18;
+  const padTop = 20;
+  const padBottom = 30;
   const plotW = width - padLeft - padRight;
   const plotH = height - padTop - padBottom;
 
@@ -41,9 +55,15 @@ export function PerformanceChart({
   const getRevY = (val: number) => padTop + plotH - (val / maxRev) * plotH;
   const getClickY = (val: number) => padTop + plotH - (val / maxClicks) * plotH;
 
-  const revLinePoints = series.map((p, i) => `${getX(i)},${getRevY(p.revenueIdr)}`).join(' ');
-  const clickLinePoints = series.map((p, i) => `${getX(i)},${getClickY(p.clicks)}`).join(' ');
-  const revAreaPoints = `${padLeft},${padTop + plotH} ${revLinePoints} ${padLeft + plotW},${padTop + plotH}`;
+  const revCoords = series.map((p, i) => ({ x: getX(i), y: getRevY(p.revenueIdr) }));
+  const clickCoords = series.map((p, i) => ({ x: getX(i), y: getClickY(p.clicks) }));
+
+  const revPath = buildSmoothPath(revCoords);
+  const clickPath = buildSmoothPath(clickCoords);
+  const revAreaPath =
+    revCoords.length > 0
+      ? `${revPath} L ${revCoords.at(-1)!.x} ${padTop + plotH} L ${revCoords[0]!.x} ${padTop + plotH} Z`
+      : '';
 
   const activePoint = hoveredIdx !== null ? series[hoveredIdx] : series.at(-1);
 
@@ -56,7 +76,7 @@ export function PerformanceChart({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `revenlo-performance-${rangeLabel.toLowerCase()}.csv`;
+    link.download = `ebieshop-performance-${rangeLabel.toLowerCase()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -64,29 +84,41 @@ export function PerformanceChart({
   return (
     <Card className="lg:col-span-8">
       <CardHeader
-        title="Grafik Performa (Pendapatan vs Klik)"
-        subtitle={`Periode ${rangeLabel} — arahkan kursor ke titik data untuk rincian`}
+        title="Tren Estimasi Komisi & Klik"
+        subtitle={`Periode ${rangeLabel} — arahkan kursor ke kurva untuk rincian harian`}
         action={
-          <Button variant="secondary" size="sm" onClick={handleExportCsv}>
-            <Download className="h-3.5 w-3.5" aria-hidden="true" />
-            CSV
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-3 text-[11px] text-[var(--text-muted)] sm:flex">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Komisi
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                Klik
+              </span>
+            </div>
+            <Button variant="secondary" size="sm" onClick={handleExportCsv}>
+              <Download className="h-3.5 w-3.5" aria-hidden="true" />
+              CSV
+            </Button>
+          </div>
         }
       />
 
       {activePoint ? (
-        <div className="mb-3 flex flex-wrap items-center gap-4 rounded-lg bg-[var(--bg-subtle)] px-3 py-2 text-xs">
+        <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl bg-[var(--bg-subtle)]/80 px-3.5 py-2.5 text-xs">
           <span className="font-semibold text-[var(--text-primary)]">
             {activePoint.label}
           </span>
-          <span className="tabular-nums text-emerald-700 dark:text-emerald-300">
-            Pendapatan: Rp{activePoint.revenueIdr.toLocaleString('id-ID')}
+          <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
+            Est. Komisi: Rp{activePoint.revenueIdr.toLocaleString('id-ID')}
           </span>
-          <span className="tabular-nums text-indigo-700 dark:text-indigo-300">
-            Klik: {activePoint.clicks.toLocaleString('id-ID')}
+          <span className="tabular-nums font-medium text-indigo-700 dark:text-indigo-300">
+            Est. Klik: {activePoint.clicks.toLocaleString('id-ID')}
           </span>
           <span className="tabular-nums text-[var(--text-secondary)]">
-            Konversi: {activePoint.conversions}
+            Est. Konversi: {activePoint.conversions}
           </span>
         </div>
       ) : null}
@@ -95,12 +127,12 @@ export function PerformanceChart({
         <svg
           viewBox={`0 0 ${width} ${height}`}
           role="img"
-          aria-label="Grafik garis perbandingan pendapatan dan klik afiliasi"
-          className="h-56 w-full min-w-[460px]"
+          aria-label="Grafik kurva halus estimasi komisi dan klik affiliate"
+          className="h-60 w-full min-w-[460px]"
         >
           <defs>
-            <linearGradient id="revenloRevGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.24" />
+            <linearGradient id="ebieAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.28" />
               <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
             </linearGradient>
           </defs>
@@ -115,28 +147,32 @@ export function PerformanceChart({
                 x2={width - padRight}
                 y2={y}
                 stroke="currentColor"
-                className="text-slate-200 dark:text-slate-800"
-                strokeDasharray="3 3"
+                className="text-slate-200/80 dark:text-slate-800"
+                strokeDasharray="4 4"
               />
             );
           })}
 
-          <polygon points={revAreaPoints} fill="url(#revenloRevGrad)" />
-          <polyline
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="2.25"
-            strokeLinejoin="round"
-            points={revLinePoints}
-          />
-          <polyline
-            fill="none"
-            stroke="#6366f1"
-            strokeWidth="2"
-            strokeDasharray="4 3"
-            strokeLinejoin="round"
-            points={clickLinePoints}
-          />
+          {revAreaPath ? <path d={revAreaPath} fill="url(#ebieAreaGrad)" /> : null}
+          {revPath ? (
+            <path
+              d={revPath}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          ) : null}
+          {clickPath ? (
+            <path
+              d={clickPath}
+              fill="none"
+              stroke="#6366f1"
+              strokeWidth="2"
+              strokeDasharray="5 4"
+              strokeLinecap="round"
+            />
+          ) : null}
 
           {series.map((point, idx) => {
             const cx = getX(idx);
@@ -146,14 +182,14 @@ export function PerformanceChart({
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={hoveredIdx === idx ? 5 : 3}
-                  className="fill-emerald-600 stroke-white dark:stroke-slate-900"
-                  strokeWidth="1.5"
+                  r={hoveredIdx === idx ? 5.5 : 3.2}
+                  className="fill-emerald-600 stroke-white transition-all dark:stroke-slate-900"
+                  strokeWidth="2"
                 />
                 <rect
-                  x={cx - 18}
+                  x={cx - 22}
                   y={padTop}
-                  width={36}
+                  width={44}
                   height={plotH}
                   fill="transparent"
                   onMouseEnter={() => setHoveredIdx(idx)}
@@ -161,9 +197,9 @@ export function PerformanceChart({
                 />
                 <text
                   x={cx}
-                  y={height - 6}
+                  y={height - 8}
                   textAnchor="middle"
-                  className="fill-[var(--text-muted)] text-[10px]"
+                  className="fill-[var(--text-muted)] text-[10px] font-medium"
                 >
                   {point.label}
                 </text>

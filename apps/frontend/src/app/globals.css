@@ -1,27 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --bg-canvas: #f7f8fa;
+  --bg-canvas: #f6f8fb;
   --bg-surface: #ffffff;
   --bg-subtle: #f1f5f9;
-  --border-hairline: #e2e8f0;
+  --border-hairline: rgba(226, 232, 240, 0.85);
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #64748b;
-  --accent-primary: #0f172a;
-  --accent-emerald: #059669;
 }
 
 .dark {
-  --bg-canvas: #0b0f17;
+  --bg-canvas: #090d16;
   --bg-surface: #111827;
   --bg-subtle: #1e293b;
-  --border-hairline: #1f2937;
+  --border-hairline: rgba(51, 65, 85, 0.65);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --accent-primary: #f8fafc;
-  --accent-emerald: #10b981;
 }
 
 body {
@@ -40,4 +36,18 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+.ebie-hero-aura {
+  background:
+    radial-gradient(60% 100% at 15% 0%, rgba(16, 185, 129, 0.16) 0%, transparent 70%),
+    radial-gradient(50% 90% at 85% 0%, rgba(99, 102, 241, 0.14) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(236, 253, 245, 0.75) 0%, rgba(246, 248, 251, 0) 100%);
+}
+
+.dark .ebie-hero-aura {
+  background:
+    radial-gradient(60% 100% at 15% 0%, rgba(16, 185, 129, 0.18) 0%, transparent 70%),
+    radial-gradient(50% 90% at 85% 0%, rgba(99, 102, 241, 0.16) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.85) 0%, rgba(9, 13, 22, 0) 100%);
 }
