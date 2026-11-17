@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc",
-    "start": "cross-env NODE_ENV=production node --env-file=../../.env.production dist/index.js"
+    "start": "cross-env NODE_ENV=production node --env-file=../../.env.production dist/index.js",
+    "login:shopee": "tsx src/playwright/login-cli.ts shopee",
+    "login:tiktok": "tsx src/playwright/login-cli.ts tiktok"
   },
   "dependencies": {
     "@ebieshop/mocks": "workspace:*",
