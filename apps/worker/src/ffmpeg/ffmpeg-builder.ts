@@ -22,7 +22,7 @@ export function buildFfmpegStitchArgs(input: FfmpegStitchInput): string[] {
 
   const args: string[] = ['-y'];
   for (const clip of input.clipPaths) {
-    args.push('-i', clip);
+    args.push('-stream_loop', '-1', '-i', clip);
   }
   const voiceIdx = input.clipPaths.length;
   args.push('-i', input.voiceoverPath);
