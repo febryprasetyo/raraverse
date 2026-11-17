@@ -52,7 +52,7 @@ export default function SchedulerPage() {
   }, [client, loadData]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-[1400px] space-y-6">
       <header>
         <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
           Scheduler & Meta Auto-DM
