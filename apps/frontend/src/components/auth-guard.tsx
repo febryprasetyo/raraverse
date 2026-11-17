@@ -25,7 +25,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
           Autentikasi Admin Diperlukan
         </h1>
         <p className="mt-2 text-xs text-[var(--text-muted)]">
-          Silakan masuk dengan token admin backend untuk mengakses Revenlo Affiliate Dashboard.
+          Silakan masuk dengan token admin backend untuk mengakses dashboard EBIESHOP.
         </p>
         <Link
           href="/login"

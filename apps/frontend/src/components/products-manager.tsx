@@ -1,5 +1,6 @@
 'use client';
 
+import { Check, Copy, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type { Product, ProductStatus } from '@ebieshop/shared';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +51,8 @@ export function ProductsManager({
   onUpdateProduct,
 }: ProductsManagerProps) {
   const [filter, setFilter] = useState<'ALL' | ProductStatus>('ALL');
+  const [search, setSearch] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [niche, setNiche] = useState('perlengkapan_dapur');
   const [syncing, setSyncing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -89,8 +92,25 @@ export function ProductsManager({
     setEditingId(null);
   }
 
-  const visibleProducts =
-    filter === 'ALL' ? products : products.filter((p) => p.status === filter);
+  async function handleCopyShortlink(id: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch {
+      // Ignore clipboard errors in headless tests
+    }
+  }
+
+  const visibleProducts = products.filter((p) => {
+    const matchesStatus = filter === 'ALL' || p.status === filter;
+    const q = search.trim().toLowerCase();
+    const matchesQuery =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.triggerKeyword.toLowerCase().includes(q);
+    return matchesStatus && matchesQuery;
+  });
 
   return (
     <div className="space-y-6">
@@ -120,17 +140,33 @@ export function ProductsManager({
         </form>
       </Card>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter status produk">
-        {STATUS_FILTERS.map((s) => (
-          <Button
-            key={s}
-            size="sm"
-            variant={filter === s ? 'primary' : 'secondary'}
-            onClick={() => setFilter(s)}
-          >
-            {s}
-          </Button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter status produk">
+          {STATUS_FILTERS.map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={filter === s ? 'primary' : 'secondary'}
+              onClick={() => setFilter(s)}
+            >
+              {s}
+            </Button>
+          ))}
+        </div>
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-[var(--text-muted)]"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            aria-label="Cari produk atau keyword"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari produk / keyword..."
+            className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-slate-400 focus:border-slate-900 focus:outline-none"
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -185,6 +221,25 @@ export function ProductsManager({
                   </div>
 
                   <div className="flex flex-wrap gap-2">
+                    {product.affiliateUrls.shopeeShortlink ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          void handleCopyShortlink(
+                            product.id,
+                            product.affiliateUrls.shopeeShortlink!
+                          )
+                        }
+                      >
+                        {copiedId === product.id ? (
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                        Salin Shortlink
+                      </Button>
+                    ) : null}
                     <Button
                       size="sm"
                       variant="secondary"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type { WeeklyRecommendation } from '@ebieshop/shared';
 import { AuthGuard } from '@/components/auth-guard';
 import {
   DashboardOverviewContent,
@@ -15,6 +16,16 @@ export default function HomePage() {
   );
   const [data, setData] = useState<OverviewData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | undefined>();
+  const [initialTab, setInitialTab] = useState<'live' | 'analytics'>('live');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'analytics') {
+        setInitialTab('analytics');
+      }
+    }
+  }, []);
 
   const loadOverview = useCallback(
     async (silent = false) => {
@@ -55,15 +66,28 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [client, loadOverview]);
 
+  async function handleApplyRecommendation(
+    productId: string,
+    recommendation: WeeklyRecommendation
+  ) {
+    if (!client) return;
+    if (recommendation === 'DROP') {
+      await client.updateProduct(productId, { status: 'DROPPED' });
+    } else if (recommendation === 'SCALE') {
+      await client.updateProduct(productId, { status: 'ACTIVE' });
+    }
+    await loadOverview(true);
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
-            Affiliate Analytics Overview
+            EBIESHOP Creator Overview
           </h1>
           <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-            Pantau pendapatan, klik tautan, konversi, sumber trafik, dan pencairan komisi.
+            Pantau estimasi komisi, klik shortlink, Auto-DM, distribusi platform, dan evaluasi mingguan.
           </p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-3 py-1 text-[11px] font-medium text-[var(--text-secondary)]">
@@ -76,7 +100,9 @@ export default function HomePage() {
           state={status}
           data={data}
           errorMsg={errorMsg}
+          initialTab={initialTab}
           onRetry={() => void loadOverview(false)}
+          onApplyRecommendation={handleApplyRecommendation}
         />
       </AuthGuard>
     </div>

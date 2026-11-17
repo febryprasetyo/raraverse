@@ -4,13 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Activity,
-  BarChart3,
   CalendarClock,
   Film,
   LayoutDashboard,
   LogOut,
   Menu,
-  MessageSquareText,
   Moon,
   Package,
   Sun,
@@ -21,13 +19,11 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from './ui/button';
 
 export const NAV_ITEMS = [
-  { href: '/', label: 'Overview', group: 'Analytics', icon: LayoutDashboard },
-  { href: '/analytics', label: 'Evaluasi Mingguan', group: 'Analytics', icon: BarChart3 },
-  { href: '/products', label: 'Produk & Kampanye', group: 'Operations', icon: Package },
-  { href: '/studio', label: 'Content Studio 9:16', group: 'Operations', icon: Film },
-  { href: '/scheduler', label: 'Scheduler & Queue', group: 'Operations', icon: CalendarClock },
-  { href: '/dm-logs', label: 'Meta Auto-DM', group: 'System', icon: MessageSquareText },
-  { href: '/health', label: 'Worker & OAuth', group: 'System', icon: Activity },
+  { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/products', label: 'Produk & Kampanye', icon: Package },
+  { href: '/studio', label: 'Content Studio', icon: Film },
+  { href: '/scheduler', label: 'Scheduler & DM', icon: CalendarClock },
+  { href: '/health', label: 'System Health', icon: Activity },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -91,13 +87,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex items-center justify-between border-b border-[var(--border-hairline)] px-5 py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-xs font-bold text-white dark:bg-emerald-600">
-              R
+              E
             </div>
             <div>
               <p className="text-sm font-bold tracking-tight text-[var(--text-primary)]">
-                Revenlo
+                EBIESHOP
               </p>
-              <p className="text-[11px] text-[var(--text-muted)]">ebieshop affiliate</p>
+              <p className="text-[11px] text-[var(--text-muted)]">creator affiliate</p>
             </div>
           </div>
           <button
@@ -114,40 +110,39 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <nav aria-label="Menu Utama" className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
-          {(['Analytics', 'Operations', 'System'] as const).map((group) => (
-            <div key={group}>
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                {group}
-              </p>
-              <div className="space-y-0.5">
-                {NAV_ITEMS.filter((item) => item.group === group).map((item) => {
-                  const Icon = item.icon;
-                  const active = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      aria-current={active ? 'page' : undefined}
-                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
-                        active
-                          ? 'bg-[var(--bg-subtle)] font-semibold text-[var(--text-primary)]'
-                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]/60 hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      <Icon
-                        className={`h-4 w-4 shrink-0 ${
-                          active ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-muted)]'
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <nav aria-label="Menu Utama" className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Workspace
+          </p>
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active =
+              item.href === '/'
+                ? pathname === '/' || pathname === '/analytics'
+                : item.href === '/scheduler'
+                  ? pathname === '/scheduler' || pathname === '/dm-logs'
+                  : pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
+                  active
+                    ? 'bg-[var(--bg-subtle)] font-semibold text-[var(--text-primary)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]/60 hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Icon
+                  className={`h-4 w-4 shrink-0 ${
+                    active ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-muted)]'
+                  }`}
+                  aria-hidden="true"
+                />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="border-t border-[var(--border-hairline)] p-3">
@@ -177,9 +172,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between border-b border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 py-3 md:hidden">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white dark:bg-emerald-600">
-              R
+              E
             </div>
-            <span className="text-sm font-bold text-[var(--text-primary)]">Revenlo</span>
+            <span className="text-sm font-bold text-[var(--text-primary)]">EBIESHOP</span>
           </div>
           <div className="flex items-center gap-1">
             <button

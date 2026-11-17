@@ -4,9 +4,8 @@ import {
   ArrowUpRight,
   Check,
   Copy,
-  Download,
+  Film,
   Search,
-  Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -15,14 +14,16 @@ import type {
   DmLog,
   Product,
   PublishJobRecord,
+  TargetPlatform,
   WeeklyEvaluationReport,
+  WeeklyRecommendation,
 } from '@ebieshop/shared';
+import { AnalyticsMatrix } from '@/components/analytics-matrix';
 import {
   PerformanceChart,
   type PerformancePoint,
 } from '@/components/revenlo/performance-chart';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { StatePanel } from '@/components/ui/state-panel';
 
@@ -35,21 +36,7 @@ export interface OverviewData {
 }
 
 type DateRange = 'Hari Ini' | '7D' | '30D' | 'YTD';
-type SourceFilter = 'ALL' | 'Instagram' | 'TikTok' | 'YouTube' | 'Shopee';
-type DeviceFilter = 'ALL' | 'Mobile' | 'Desktop' | 'Tablet';
-
-const SOURCE_WEIGHTS: Record<Exclude<SourceFilter, 'ALL'>, number> = {
-  Instagram: 0.38,
-  TikTok: 0.31,
-  YouTube: 0.17,
-  Shopee: 0.14,
-};
-
-const DEVICE_WEIGHTS: Record<Exclude<DeviceFilter, 'ALL'>, number> = {
-  Mobile: 0.78,
-  Desktop: 0.16,
-  Tablet: 0.06,
-};
+type OverviewTab = 'live' | 'analytics';
 
 const RANGE_MULTIPLIER: Record<DateRange, number> = {
   'Hari Ini': 0.18,
@@ -58,70 +45,108 @@ const RANGE_MULTIPLIER: Record<DateRange, number> = {
   YTD: 11.5,
 };
 
+const PLATFORM_LABELS: Record<TargetPlatform, string> = {
+  IG_REELS: 'Instagram Reels',
+  FB_REELS: 'Facebook Reels',
+  YT_SHORTS: 'YouTube Shorts',
+  SHOPEE_VIDEO: 'Shopee Video',
+  TIKTOK_STUDIO: 'TikTok Studio',
+};
+
 export function DashboardOverviewContent({
   state,
   data,
   errorMsg,
   onRetry,
+  initialTab = 'live',
+  onApplyRecommendation,
 }: {
   state: 'loading' | 'empty' | 'error' | 'success';
   data: OverviewData | null;
   errorMsg?: string;
   onRetry?: () => void;
+  initialTab?: OverviewTab;
+  onApplyRecommendation?: (
+    productId: string,
+    recommendation: WeeklyRecommendation
+  ) => Promise<void>;
 }) {
+  const [activeTab, setActiveTab] = useState<OverviewTab>(initialTab);
   const [dateRange, setDateRange] = useState<DateRange>('7D');
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
-  const [deviceFilter, setDeviceFilter] = useState<DeviceFilter>('ALL');
+  const [platformFilter, setPlatformFilter] = useState<'ALL' | TargetPlatform>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'revenue' | 'clicks'>('revenue');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [payoutRequested, setPayoutRequested] = useState(false);
+
+  const platformBreakdown = useMemo(() => {
+    const counts: Record<TargetPlatform, number> = {
+      IG_REELS: 0,
+      FB_REELS: 0,
+      YT_SHORTS: 0,
+      SHOPEE_VIDEO: 0,
+      TIKTOK_STUDIO: 0,
+    };
+    if (!data) return counts;
+
+    for (const job of data.jobs) {
+      counts[job.platform] += 1;
+    }
+    for (const log of data.dmLogs) {
+      counts[log.platform] += 1;
+    }
+    return counts;
+  }, [data]);
+
+  const totalPlatformEvents = useMemo(
+    () => Object.values(platformBreakdown).reduce((a, b) => a + b, 0),
+    [platformBreakdown]
+  );
 
   const filterFactor = useMemo(() => {
     const rangeMul = RANGE_MULTIPLIER[dateRange];
-    const srcMul = sourceFilter === 'ALL' ? 1 : SOURCE_WEIGHTS[sourceFilter];
-    const devMul = deviceFilter === 'ALL' ? 1 : DEVICE_WEIGHTS[deviceFilter];
-    return rangeMul * srcMul * devMul;
-  }, [dateRange, sourceFilter, deviceFilter]);
+    if (platformFilter === 'ALL' || totalPlatformEvents === 0) {
+      return rangeMul;
+    }
+    const share = platformBreakdown[platformFilter] / totalPlatformEvents;
+    return rangeMul * Math.max(0.15, share);
+  }, [dateRange, platformFilter, platformBreakdown, totalPlatformEvents]);
 
   const metrics = useMemo(() => {
     if (!data) {
       return {
-        totalRevenue: 0,
-        totalClicks: 0,
-        totalConversions: 0,
-        conversionRate: 0,
-        availableBalance: 0,
-        pendingBalance: 0,
+        estCommissionIdr: 0,
+        estClicks: 0,
+        autoDmSent: 0,
+        estConversions: 0,
+        publishedVideos: 0,
+        queuedVideos: 0,
       };
     }
 
-    const baseRevenue =
+    const baseCommission =
       data.weekly?.items.reduce((sum, i) => sum + i.estimatedCommissionIdr, 0) ??
-      data.products.reduce((sum, p) => sum + Math.round(p.priceIdr * p.commissionRatePct * 0.4), 0);
+      data.products.reduce(
+        (sum, p) => sum + Math.round(p.priceIdr * (p.commissionRatePct / 100) * 12),
+        0
+      );
     const baseClicks =
       data.weekly?.items.reduce((sum, i) => sum + i.estimatedClicks, 0) ??
       Math.max(data.dmLogs.length * 14, data.products.length * 42);
 
-    const totalRevenue = Math.round(baseRevenue * filterFactor);
-    const totalClicks = Math.max(1, Math.round(baseClicks * filterFactor));
-    const totalConversions = Math.max(
-      0,
-      Math.round(totalClicks * 0.084)
-    );
-    const conversionRate = Number(
-      ((totalConversions / totalClicks) * 100).toFixed(2)
-    );
-    const availableBalance = Math.round(totalRevenue * 0.72);
-    const pendingBalance = Math.max(0, totalRevenue - availableBalance);
+    const estCommissionIdr = Math.round(baseCommission * filterFactor);
+    const estClicks = Math.max(0, Math.round(baseClicks * filterFactor));
+    const autoDmSent = data.dmLogs.filter((d) => d.dmSent).length;
+    const estConversions = Math.max(0, Math.round(estClicks * 0.084));
+    const publishedVideos = data.jobs.filter((j) => j.status === 'PUBLISHED').length;
+    const queuedVideos = data.jobs.filter((j) => j.status === 'QUEUED').length;
 
     return {
-      totalRevenue,
-      totalClicks,
-      totalConversions,
-      conversionRate,
-      availableBalance,
-      pendingBalance,
+      estCommissionIdr,
+      estClicks,
+      autoDmSent,
+      estConversions,
+      publishedVideos,
+      queuedVideos,
     };
   }, [data, filterFactor]);
 
@@ -132,9 +157,9 @@ export function DashboardOverviewContent({
       const w = weights[idx]!;
       return {
         label,
-        revenueIdr: Math.round(metrics.totalRevenue * w),
-        clicks: Math.round(metrics.totalClicks * w),
-        conversions: Math.round(metrics.totalConversions * w),
+        revenueIdr: Math.round(metrics.estCommissionIdr * w),
+        clicks: Math.round(metrics.estClicks * w),
+        conversions: Math.round(metrics.estConversions * w),
       };
     });
   }, [metrics]);
@@ -146,27 +171,29 @@ export function DashboardOverviewContent({
     );
 
     return data.products
-      .filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
-        p.triggerKeyword.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+          p.triggerKeyword.toLowerCase().includes(searchQuery.trim().toLowerCase())
       )
       .map((product) => {
         const weekly = weeklyByProd.get(product.id);
         const clicks = Math.round((weekly?.estimatedClicks ?? 48) * filterFactor);
-        const conversions = Math.max(0, Math.round(clicks * 0.085));
-        const cr = clicks > 0 ? Number(((conversions / clicks) * 100).toFixed(1)) : 0;
+        const dmCount = data.dmLogs.filter(
+          (d) => d.productId === product.id && d.dmSent
+        ).length;
         const revenueIdr = Math.round(
           (weekly?.estimatedCommissionIdr ?? product.priceIdr * 3) * filterFactor
         );
         const shortlink =
           product.affiliateUrls.shopeeShortlink ??
+          product.affiliateUrls.tiktokShortlink ??
           product.affiliateUrls.biolinkAnchorUrl ??
           `https://desty.page/ebieshop#${product.biolinkNumber}`;
         return {
           product,
           clicks,
-          conversions,
-          cr,
+          dmCount,
           revenueIdr,
           shortlink,
         };
@@ -190,8 +217,8 @@ export function DashboardOverviewContent({
     return (
       <StatePanel
         status="loading"
-        title="Memuat analitik Revenlo..."
-        description="Menghitung metrik klik, konversi, dan komisi real-time."
+        title="Memuat analitik EBIESHOP..."
+        description="Mengambil data produk, video, Auto-DM, dan estimasi komisi."
       />
     );
   }
@@ -212,390 +239,341 @@ export function DashboardOverviewContent({
       <StatePanel
         status="empty"
         title="Belum ada produk atau kampanye aktif"
-        description="Sinkronkan produk dari Kalodata di menu Produk & Kampanye."
+        description="Mulai dengan sinkronisasi produk dari Kalodata di menu Produk & Kampanye."
       />
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Global Filter Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 py-3">
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Rentang waktu">
-          {(['Hari Ini', '7D', '30D', 'YTD'] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setDateRange(r)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                dateRange === r
-                  ? 'bg-slate-900 text-white dark:bg-emerald-600'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="filter-source">
-            Filter Sumber Trafik
-          </label>
-          <select
-            id="filter-source"
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
-            className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-primary)]"
-          >
-            <option value="ALL">Semua Sumber</option>
-            <option value="Instagram">Instagram</option>
-            <option value="TikTok">TikTok</option>
-            <option value="YouTube">YouTube</option>
-            <option value="Shopee">Shopee</option>
-          </select>
-
-          <label className="sr-only" htmlFor="filter-device">
-            Filter Perangkat
-          </label>
-          <select
-            id="filter-device"
-            value={deviceFilter}
-            onChange={(e) => setDeviceFilter(e.target.value as DeviceFilter)}
-            className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-primary)]"
-          >
-            <option value="ALL">Semua Perangkat</option>
-            <option value="Mobile">Mobile (iOS/Android)</option>
-            <option value="Desktop">Desktop</option>
-            <option value="Tablet">Tablet</option>
-          </select>
-        </div>
+      {/* Overview Sub-Tabs */}
+      <div
+        role="tablist"
+        aria-label="Tampilan Overview"
+        className="inline-flex rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-1"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'live'}
+          onClick={() => setActiveTab('live')}
+          className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+            activeTab === 'live'
+              ? 'bg-slate-900 text-white dark:bg-emerald-600'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Analitik Live
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'analytics'}
+          onClick={() => setActiveTab('analytics')}
+          className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+            activeTab === 'analytics'
+              ? 'bg-slate-900 text-white dark:bg-emerald-600'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Evaluasi Mingguan
+        </button>
       </div>
 
-      {/* Fitur 1: KPI Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-[var(--text-muted)]">
-              Total Pendapatan
-            </p>
-            <Badge tone="success">+14.2%</Badge>
-          </div>
-          <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            Rp{metrics.totalRevenue.toLocaleString('id-ID')}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            Tertunda: Rp{metrics.pendingBalance.toLocaleString('id-ID')}
-          </p>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-[var(--text-muted)]">
-              Total Klik Tautan
-            </p>
-            <Badge tone="success">+8.6%</Badge>
-          </div>
-          <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            {metrics.totalClicks.toLocaleString('id-ID')}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            Dari {data.dmLogs.filter((d) => d.dmSent).length} Auto-DM & Biolink
-          </p>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-[var(--text-muted)]">
-              Konversi (Referrals)
-            </p>
-            <Badge tone="info">CR {metrics.conversionRate}%</Badge>
-          </div>
-          <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            {metrics.totalConversions.toLocaleString('id-ID')}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-            Transaksi tervalidasi periode {dateRange}
-          </p>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-[var(--text-muted)]">
-              Saldo Siap Tarik
-            </p>
-            <Wallet className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-          </div>
-          <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            Rp{metrics.availableBalance.toLocaleString('id-ID')}
-          </p>
-          <div className="mt-2 flex items-center justify-between">
-            <button
-              type="button"
-              disabled={metrics.availableBalance < 100000 || payoutRequested}
-              onClick={() => setPayoutRequested(true)}
-              className="text-xs font-semibold text-emerald-700 hover:underline disabled:text-[var(--text-muted)] dark:text-emerald-400"
+      {activeTab === 'analytics' ? (
+        <AnalyticsMatrix
+          report={data.weekly ?? null}
+          loading={false}
+          onRetry={onRetry ?? (() => {})}
+          onApplyRecommendation={
+            onApplyRecommendation ?? (async () => {})
+          }
+        />
+      ) : (
+        <>
+          {/* Global Filter Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 py-3">
+            <div
+              className="flex flex-wrap items-center gap-1.5"
+              role="group"
+              aria-label="Rentang waktu"
             >
-              {payoutRequested ? 'Pengajuan Diproses ✓' : 'Ajukan Payout →'}
-            </button>
-          </div>
-        </Card>
-      </div>
-
-      {/* Fitur 2 & 3: Performance Chart + Traffic/Device Breakdown */}
-      <div className="grid gap-6 lg:grid-cols-12">
-        <PerformanceChart series={chartSeries} rangeLabel={dateRange} />
-
-        <Card className="space-y-5 lg:col-span-4">
-          <CardHeader
-            title="Sumber Trafik & Perangkat"
-            subtitle="Klik kanal untuk menyaring dasbor"
-          />
-
-          <div className="space-y-3">
-            {(
-              Object.entries(SOURCE_WEIGHTS) as Array<
-                [Exclude<SourceFilter, 'ALL'>, number]
-              >
-            ).map(([channel, ratio]) => {
-              const pct = Math.round(ratio * 100);
-              const selected = sourceFilter === channel;
-              return (
+              {(['Hari Ini', '7D', '30D', 'YTD'] as const).map((r) => (
                 <button
-                  key={channel}
+                  key={r}
                   type="button"
-                  onClick={() =>
-                    setSourceFilter(selected ? 'ALL' : channel)
-                  }
-                  className="block w-full text-left"
-                >
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span
-                      className={`font-medium ${
-                        selected
-                          ? 'text-emerald-700 dark:text-emerald-400'
-                          : 'text-[var(--text-primary)]'
-                      }`}
-                    >
-                      {channel}
-                    </span>
-                    <span className="tabular-nums text-[var(--text-muted)]">
-                      {pct}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)]">
-                    <div
-                      className={`h-full rounded-full ${
-                        selected ? 'bg-emerald-600' : 'bg-slate-800 dark:bg-slate-300'
-                      }`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="border-t border-[var(--border-hairline)] pt-4">
-            <p className="mb-2.5 text-xs font-semibold text-[var(--text-primary)]">
-              Distribusi Perangkat
-            </p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {(
-                Object.entries(DEVICE_WEIGHTS) as Array<
-                  [Exclude<DeviceFilter, 'ALL'>, number]
-                >
-              ).map(([dev, ratio]) => (
-                <button
-                  key={dev}
-                  type="button"
-                  onClick={() =>
-                    setDeviceFilter(deviceFilter === dev ? 'ALL' : dev)
-                  }
-                  className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
-                    deviceFilter === dev
-                      ? 'border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/40'
-                      : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)]'
+                  onClick={() => setDateRange(r)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    dateRange === r
+                      ? 'bg-slate-900 text-white dark:bg-emerald-600'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
                   }`}
                 >
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {Math.round(ratio * 100)}%
-                  </p>
-                  <p className="text-[10px] text-[var(--text-muted)]">{dev}</p>
+                  {r}
                 </button>
               ))}
             </div>
-          </div>
-        </Card>
-      </div>
 
-      {/* Fitur 4: Campaign / Product Table */}
-      <Card>
-        <CardHeader
-          title="Performa Kampanye & Produk"
-          subtitle="Pantau shortlink, klik, rasio konversi, dan komisi"
-          action={
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-[var(--text-muted)]"
-                  aria-hidden="true"
-                />
-                <input
-                  type="search"
-                  aria-label="Cari kampanye atau keyword"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari produk / keyword..."
-                  className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-slate-400 focus:border-slate-900 focus:outline-none"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <label className="sr-only" htmlFor="filter-platform">
+                Filter Platform Sosial Media
+              </label>
               <select
-                aria-label="Urutkan kampanye"
-                value={sortBy}
+                id="filter-platform"
+                value={platformFilter}
                 onChange={(e) =>
-                  setSortBy(e.target.value as 'revenue' | 'clicks')
+                  setPlatformFilter(e.target.value as 'ALL' | TargetPlatform)
                 }
-                className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-2.5 py-1.5 text-xs text-[var(--text-primary)]"
+                className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-primary)]"
               >
-                <option value="revenue">Pendapatan Tertinggi</option>
-                <option value="clicks">Klik Terbanyak</option>
+                <option value="ALL">Semua Platform</option>
+                {(Object.keys(PLATFORM_LABELS) as TargetPlatform[]).map((p) => (
+                  <option key={p} value={p}>
+                    {PLATFORM_LABELS[p]}
+                  </option>
+                ))}
               </select>
-              <Link
-                href="/products"
-                className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-hairline)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-              >
-                Kelola
-                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </Link>
-            </div>
-          }
-        />
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left text-xs">
-            <thead>
-              <tr className="border-b border-[var(--border-hairline)] text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                <th className="py-2.5 pr-4">Kampanye / Produk</th>
-                <th className="py-2.5 pr-4">Tautan Pendek</th>
-                <th className="py-2.5 pr-4">Status</th>
-                <th className="py-2.5 pr-4 text-right">Klik</th>
-                <th className="py-2.5 pr-4 text-right">Konversi</th>
-                <th className="py-2.5 pr-4 text-right">CR</th>
-                <th className="py-2.5 text-right">Pendapatan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-hairline)]">
-              {campaignRows.map((row) => (
-                <tr key={row.product.id} className="hover:bg-[var(--bg-subtle)]/40">
-                  <td className="py-3 pr-4">
-                    <p className="font-semibold text-[var(--text-primary)]">
-                      {row.product.name}
-                    </p>
-                    <p className="text-[11px] text-[var(--text-muted)]">
-                      Keyword:{' '}
-                      <span className="font-mono text-emerald-700 dark:text-emerald-400">
-                        {row.product.triggerKeyword}
-                      </span>{' '}
-                      • #{row.product.biolinkNumber}
-                    </p>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="max-w-[160px] truncate font-mono text-[11px] text-[var(--text-secondary)]">
-                        {row.shortlink}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => void handleCopy(row.product.id, row.shortlink)}
-                        aria-label={`Salin tautan ${row.product.triggerKeyword}`}
-                        className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-                      >
-                        {copiedId === row.product.id ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <Badge tone={row.product.status === 'ACTIVE' ? 'success' : 'info'}>
-                      {row.product.status}
-                    </Badge>
-                  </td>
-                  <td className="tabular-nums py-3 pr-4 text-right text-[var(--text-primary)]">
-                    {row.clicks.toLocaleString('id-ID')}
-                  </td>
-                  <td className="tabular-nums py-3 pr-4 text-right text-[var(--text-primary)]">
-                    {row.conversions}
-                  </td>
-                  <td className="tabular-nums py-3 pr-4 text-right text-[var(--text-secondary)]">
-                    {row.cr}%
-                  </td>
-                  <td className="tabular-nums py-3 text-right font-semibold text-[var(--text-primary)]">
-                    Rp{row.revenueIdr.toLocaleString('id-ID')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Fitur 5: Payout & Earnings Snapshot */}
-      <Card>
-        <CardHeader
-          title="Riwayat Pencairan Komisi (Payout)"
-          subtitle="Pelacakan status transfer komisi afiliasi"
-          action={
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => window.print()}
-            >
-              <Download className="h-3.5 w-3.5" aria-hidden="true" />
-              Cetak Invoice
-            </Button>
-          }
-        />
-        <div className="divide-y divide-[var(--border-hairline)] text-xs">
-          <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-            <div>
-              <p className="font-semibold text-[var(--text-primary)]">
-                PAY-202611-001 • Transfer Bank BCA
-              </p>
-              <p className="text-[11px] text-[var(--text-muted)]">
-                Diajukan 10 Nov 2026
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="tabular-nums font-semibold text-[var(--text-primary)]">
-                Rp420.000
-              </span>
-              <Badge tone="success">Paid</Badge>
             </div>
           </div>
-          {payoutRequested ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-              <div>
-                <p className="font-semibold text-[var(--text-primary)]">
-                  PAY-202611-002 • Transfer Bank BCA
+
+          {/* KPI Summary Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[var(--text-muted)]">
+                  Estimasi Komisi
                 </p>
-                <p className="text-[11px] text-[var(--text-muted)]">
-                  Baru saja diajukan
+                <Badge tone="success">Shopee / TikTok</Badge>
+              </div>
+              <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                Rp{metrics.estCommissionIdr.toLocaleString('id-ID')}
+              </p>
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                Akumulasi estimasi periode {dateRange}
+              </p>
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[var(--text-muted)]">
+                  Estimasi Klik Shortlink
                 </p>
+                <Badge tone="info">{metrics.autoDmSent} DM Terkirim</Badge>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="tabular-nums font-semibold text-[var(--text-primary)]">
-                  Rp{metrics.availableBalance.toLocaleString('id-ID')}
-                </span>
-                <Badge tone="warning">Processing</Badge>
+              <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                {metrics.estClicks.toLocaleString('id-ID')}
+              </p>
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                Dari Auto-DM & klik Biolink
+              </p>
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[var(--text-muted)]">
+                  Estimasi Konversi
+                </p>
+                <Badge tone="neutral">~8.4% CR</Badge>
               </div>
+              <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                {metrics.estConversions.toLocaleString('id-ID')}
+              </p>
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                Checkout produk affiliate
+              </p>
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[var(--text-muted)]">
+                  Video Terpublikasi
+                </p>
+                <Film className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+              </div>
+              <p className="tabular-nums mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+                {metrics.publishedVideos}
+              </p>
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                {metrics.queuedVideos} video dalam antrean jadwal
+              </p>
+            </Card>
+          </div>
+
+          {/* Chart + Real Platform Distribution */}
+          <div className="grid gap-6 lg:grid-cols-12">
+            <PerformanceChart series={chartSeries} rangeLabel={dateRange} />
+
+            <Card className="space-y-4 lg:col-span-4">
+              <CardHeader
+                title="Distribusi Platform"
+                subtitle="Aktivitas publish & Auto-DM per kanal"
+              />
+              <div className="space-y-3">
+                {(Object.keys(PLATFORM_LABELS) as TargetPlatform[]).map((platform) => {
+                  const count = platformBreakdown[platform];
+                  const pct =
+                    totalPlatformEvents > 0
+                      ? Math.round((count / totalPlatformEvents) * 100)
+                      : 0;
+                  const selected = platformFilter === platform;
+                  return (
+                    <button
+                      key={platform}
+                      type="button"
+                      onClick={() =>
+                        setPlatformFilter(selected ? 'ALL' : platform)
+                      }
+                      className="block w-full text-left"
+                    >
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <span
+                          className={`font-medium ${
+                            selected
+                              ? 'text-emerald-700 dark:text-emerald-400'
+                              : 'text-[var(--text-primary)]'
+                          }`}
+                        >
+                          {PLATFORM_LABELS[platform]}
+                        </span>
+                        <span className="tabular-nums text-[var(--text-muted)]">
+                          {count} ({pct}%)
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-subtle)]">
+                        <div
+                          className={`h-full rounded-full ${
+                            selected
+                              ? 'bg-emerald-600'
+                              : 'bg-slate-800 dark:bg-slate-300'
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+
+          {/* Campaign / Product Table */}
+          <Card>
+            <CardHeader
+              title="Performa Produk & Link Affiliate"
+              subtitle="Salin shortlink resmi atau pantau estimasi komisi per produk"
+              action={
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <Search
+                      className="pointer-events-none absolute left-2.5 top-2 h-3.5 w-3.5 text-[var(--text-muted)]"
+                      aria-hidden="true"
+                    />
+                    <input
+                      type="search"
+                      aria-label="Cari produk atau keyword"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Cari produk / keyword..."
+                      className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-slate-400 focus:border-slate-900 focus:outline-none"
+                    />
+                  </div>
+                  <select
+                    aria-label="Urutkan produk"
+                    value={sortBy}
+                    onChange={(e) =>
+                      setSortBy(e.target.value as 'revenue' | 'clicks')
+                    }
+                    className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-2.5 py-1.5 text-xs text-[var(--text-primary)]"
+                  >
+                    <option value="revenue">Komisi Tertinggi</option>
+                    <option value="clicks">Klik Terbanyak</option>
+                  </select>
+                  <Link
+                    href="/products"
+                    className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-hairline)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                  >
+                    Kelola
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
+                </div>
+              }
+            />
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[var(--border-hairline)] text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    <th className="py-2.5 pr-4">Produk / Kampanye</th>
+                    <th className="py-2.5 pr-4">Shortlink Resmi</th>
+                    <th className="py-2.5 pr-4">Status</th>
+                    <th className="py-2.5 pr-4 text-right">Auto-DM</th>
+                    <th className="py-2.5 pr-4 text-right">Est. Klik</th>
+                    <th className="py-2.5 text-right">Est. Komisi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-hairline)]">
+                  {campaignRows.map((row) => (
+                    <tr
+                      key={row.product.id}
+                      className="hover:bg-[var(--bg-subtle)]/40"
+                    >
+                      <td className="py-3 pr-4">
+                        <p className="font-semibold text-[var(--text-primary)]">
+                          {row.product.name}
+                        </p>
+                        <p className="text-[11px] text-[var(--text-muted)]">
+                          Keyword:{' '}
+                          <span className="font-mono text-emerald-700 dark:text-emerald-400">
+                            {row.product.triggerKeyword}
+                          </span>{' '}
+                          • Biolink #{row.product.biolinkNumber}
+                        </p>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="max-w-[165px] truncate font-mono text-[11px] text-[var(--text-secondary)]">
+                            {row.shortlink}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleCopy(row.product.id, row.shortlink)
+                            }
+                            aria-label={`Salin tautan ${row.product.triggerKeyword}`}
+                            className="rounded p-1 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                          >
+                            {copiedId === row.product.id ? (
+                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Badge
+                          tone={row.product.status === 'ACTIVE' ? 'success' : 'info'}
+                        >
+                          {row.product.status}
+                        </Badge>
+                      </td>
+                      <td className="tabular-nums py-3 pr-4 text-right text-[var(--text-primary)]">
+                        {row.dmCount}
+                      </td>
+                      <td className="tabular-nums py-3 pr-4 text-right text-[var(--text-primary)]">
+                        {row.clicks.toLocaleString('id-ID')}
+                      </td>
+                      <td className="tabular-nums py-3 text-right font-semibold text-[var(--text-primary)]">
+                        Rp{row.revenueIdr.toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : null}
-        </div>
-      </Card>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

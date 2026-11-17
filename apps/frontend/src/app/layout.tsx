@@ -5,9 +5,9 @@ import { AuthProvider } from '@/lib/auth-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Revenlo × ebieshop — Affiliate Analytics & Automation',
+  title: 'EBIESHOP — Affiliate Analytics & Content Automation',
   description:
-    'Pusat kendali analitik afiliasi, performa tautan kampanye, kurasi produk, studio konten 9:16, dan pencairan komisi.',
+    'Control plane kreator affiliate untuk kurasi produk Kalodata, studio konten 9:16, distribusi multi-platform, Auto-DM, dan pelacakan estimasi komisi.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

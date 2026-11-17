@@ -33,10 +33,10 @@ export default function ProductsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Produk & Kurasi Kalodata
+        <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+          Produk & Kampanye Affiliate
         </h1>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
           Kelola sinkronisasi Kalodata, shortlink affiliate, trigger keyword, dan kesiapan klip mentah.
         </p>
       </header>

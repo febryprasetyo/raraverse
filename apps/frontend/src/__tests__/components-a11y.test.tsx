@@ -83,7 +83,7 @@ describe('Frontend Components & WCAG 2.2 AA Accessibility', () => {
     const { rerender, container } = render(
       <DashboardOverviewContent state="loading" data={null} />
     );
-    expect(screen.getByRole('status').textContent).toContain('Memuat analitik Revenlo');
+    expect(screen.getByRole('status').textContent).toContain('Memuat analitik EBIESHOP');
 
     rerender(<DashboardOverviewContent state="empty" data={null} />);
     expect(screen.getByText('Belum ada produk atau kampanye aktif')).toBeTruthy();

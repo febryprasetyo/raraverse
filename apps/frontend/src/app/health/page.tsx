@@ -34,10 +34,10 @@ export default function HealthPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Worker, Playwright & OAuth Health
+        <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+          System Health
         </h1>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
           Status heartbeat Node Lokal, masa berlaku token OAuth 2.0, dan sesi storageState.json.
         </p>
       </header>

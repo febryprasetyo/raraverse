@@ -56,12 +56,12 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <div className="mb-4 flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-sm font-bold text-white dark:bg-emerald-600">
-            R
+            E
           </div>
           <div>
-            <p className="text-sm font-bold text-[var(--text-primary)]">Revenlo</p>
+            <p className="text-sm font-bold text-[var(--text-primary)]">EBIESHOP</p>
             <p className="text-[11px] text-[var(--text-muted)]">
-              ebieshop Affiliate Control
+              Creator Affiliate Control
             </p>
           </div>
         </div>
