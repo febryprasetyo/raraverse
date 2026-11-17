@@ -6,6 +6,7 @@ import type {
   IKalodataClient,
   ILlmProvider,
   IProductRepository,
+  IPublishJobRepository,
 } from './adapters/contracts.js';
 import { ScriptGeneratorService } from './adapters/llm-providers.js';
 import { MockMetaGraphClient, type IMetaGraphClient } from './adapters/meta-graph-client.js';
@@ -16,6 +17,7 @@ import {
   MockKalodataClient,
   MockLlmProvider,
   MockProductRepository,
+  MockPublishJobRepository,
 } from './adapters/mock-adapters.js';
 import { MetaAutoDmProcessor } from './services/meta-auto-dm.js';
 import { MockStoragePresigner, type IStoragePresigner } from './services/r2-presigner.js';
@@ -27,6 +29,7 @@ export interface AppContainer {
   scriptGenerator: ScriptGeneratorService;
   products: IProductRepository;
   contentAssets: IContentAssetRepository;
+  publishJobs: IPublishJobRepository;
   dmLogs: IDmLogRepository;
   metaClient: IMetaGraphClient;
   metaAutoDm: MetaAutoDmProcessor;
@@ -43,6 +46,7 @@ export function createAppContainer(env: EnvConfig): AppContainer {
   const llm: ILlmProvider = new MockLlmProvider();
   const products: IProductRepository = new MockProductRepository();
   const contentAssets: IContentAssetRepository = new MockContentAssetRepository();
+  const publishJobs: IPublishJobRepository = new MockPublishJobRepository();
   const dmLogs: IDmLogRepository = new MockDmLogRepository();
   const metaClient: IMetaGraphClient = new MockMetaGraphClient();
   const analytics: IAnalyticsRepository = new MockAnalyticsRepository();
@@ -65,6 +69,7 @@ export function createAppContainer(env: EnvConfig): AppContainer {
     scriptGenerator: new ScriptGeneratorService(llm),
     products,
     contentAssets,
+    publishJobs,
     dmLogs,
     metaClient,
     metaAutoDm,

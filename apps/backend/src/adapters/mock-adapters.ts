@@ -4,25 +4,36 @@ import {
   loadMockDmLogs,
   loadMockKalodataCandidates,
   loadMockProducts,
+  loadMockPublishJobs,
   loadMockScriptGeneratorOutput,
   loadMockWeeklyEvaluation,
 } from '@ebieshop/mocks';
-import type { ContentAsset, ContentStatus, DmLog, Product, ProductStatus } from '@ebieshop/shared';
+import type {
+  ContentAsset,
+  ContentStatus,
+  DmLog,
+  Product,
+  ProductStatus,
+  PublishJobRecord,
+} from '@ebieshop/shared';
 import { ConflictError, NotFoundError } from '../errors.js';
 import { assertValidProductTransition } from '../services/product-transitions.js';
 import type {
   CreateContentAssetInput,
   CreateDmLogInput,
   CreateProductInput,
+  CreatePublishJobInput,
   IAnalyticsRepository,
   IContentAssetRepository,
   IDmLogRepository,
   IKalodataClient,
   ILlmProvider,
   IProductRepository,
+  IPublishJobRepository,
   KalodataFilterInput,
   UpdateContentAssetInput,
   UpdateProductInput,
+  UpdatePublishJobInput,
 } from './contracts.js';
 
 export class MockKalodataClient implements IKalodataClient {
@@ -239,6 +250,68 @@ export class MockDmLogRepository implements IDmLogRepository {
     };
     this.items.push(log);
     return log;
+  }
+}
+
+export class MockPublishJobRepository implements IPublishJobRepository {
+  private readonly items: PublishJobRecord[];
+
+  constructor() {
+    this.items = loadMockPublishJobs().map((item) => structuredClone(item));
+  }
+
+  async listPublishJobs(): Promise<PublishJobRecord[]> {
+    return [...this.items];
+  }
+
+  async getPublishJobById(id: string): Promise<PublishJobRecord | null> {
+    return this.items.find((item) => item.id === id) ?? null;
+  }
+
+  async createPublishJob(input: CreatePublishJobInput): Promise<PublishJobRecord> {
+    if (
+      this.items.some(
+        (item) =>
+          item.contentAssetId === input.contentAssetId &&
+          item.platform === input.platform
+      )
+    ) {
+      throw new ConflictError(
+        `Publish job already exists for asset '${input.contentAssetId}' on '${input.platform}'`
+      );
+    }
+    const job: PublishJobRecord = {
+      id: randomUUID(),
+      contentAssetId: input.contentAssetId,
+      productId: input.productId,
+      platform: input.platform,
+      executionMode: input.executionMode,
+      visibility: input.visibility ?? 'PUBLIC',
+      scheduledAt: input.scheduledAt,
+      publishedAt: null,
+      platformPostId: null,
+      status: 'QUEUED',
+      attemptCount: 0,
+      lastError: null,
+    };
+    this.items.push(job);
+    return job;
+  }
+
+  async updatePublishJob(
+    id: string,
+    patch: UpdatePublishJobInput
+  ): Promise<PublishJobRecord> {
+    const idx = this.items.findIndex((item) => item.id === id);
+    if (idx === -1) {
+      throw new NotFoundError(`PublishJob '${id}' not found`);
+    }
+    const updated: PublishJobRecord = {
+      ...this.items[idx]!,
+      ...patch,
+    };
+    this.items[idx] = updated;
+    return updated;
   }
 }
 

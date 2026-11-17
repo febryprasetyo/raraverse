@@ -4,11 +4,15 @@ import type {
   ContentStatus,
   DmLog,
   DmStatus,
+  ExecutionMode,
   KalodataCandidate,
   KalodataSnapshot,
   Product,
   ProductStatus,
+  PublishJobRecord,
+  PublishStatus,
   ScriptGeneratorOutput,
+  TargetPlatform,
   WeeklyEvaluationReport,
 } from '@ebieshop/shared';
 
@@ -117,6 +121,30 @@ export interface IDmLogRepository {
   listDmLogs(): Promise<DmLog[]>;
   findByCommentId(commentId: string): Promise<DmLog | null>;
   createDmLog(input: CreateDmLogInput): Promise<DmLog>;
+}
+
+export interface CreatePublishJobInput {
+  contentAssetId: string;
+  productId: string;
+  platform: TargetPlatform;
+  executionMode: ExecutionMode;
+  visibility?: 'PUBLIC' | 'PRIVATE';
+  scheduledAt: string;
+}
+
+export interface UpdatePublishJobInput {
+  status?: PublishStatus;
+  publishedAt?: string | null;
+  platformPostId?: string | null;
+  attemptCount?: number;
+  lastError?: string | null;
+}
+
+export interface IPublishJobRepository {
+  listPublishJobs(): Promise<PublishJobRecord[]>;
+  getPublishJobById(id: string): Promise<PublishJobRecord | null>;
+  createPublishJob(input: CreatePublishJobInput): Promise<PublishJobRecord>;
+  updatePublishJob(id: string, patch: UpdatePublishJobInput): Promise<PublishJobRecord>;
 }
 
 export interface IAnalyticsRepository {

@@ -15,6 +15,7 @@ import { registerContentRoutes } from './routes/content.routes.js';
 import { registerHealthRoutes } from './routes/health.routes.js';
 import { registerMetaWebhookRoutes } from './routes/meta-webhook.routes.js';
 import { registerProductRoutes } from './routes/products.routes.js';
+import { registerPublishRoutes } from './routes/publish.routes.js';
 import { registerWorkerRoutes } from './routes/workers.routes.js';
 
 export interface BuildAppOptions {
@@ -58,6 +59,7 @@ export async function buildApp(options: BuildAppOptions) {
   registerProductRoutes(app, container, adminGuard);
   registerContentRoutes(app, container, adminGuard, workerGuard, queueRegistry);
   registerMetaWebhookRoutes(app, container, adminGuard, queueRegistry);
+  registerPublishRoutes(app, container, adminGuard, queueRegistry);
 
   return app;
 }
