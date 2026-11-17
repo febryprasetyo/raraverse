@@ -34,6 +34,7 @@ const EnvInputSchema = z.object({
   R2_PUBLIC_BASE_URL: z.string().optional(),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_ADMIN_CHAT_ID: z.string().optional(),
+  CORS_ORIGIN: z.string().optional(),
 });
 
 export interface EnvConfig {
@@ -65,6 +66,7 @@ export interface EnvConfig {
   R2_PUBLIC_BASE_URL?: string;
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_ADMIN_CHAT_ID?: string;
+  CORS_ORIGIN?: string;
 }
 
 export function loadEnvConfig(rawEnv: Record<string, string | undefined>): EnvConfig {
@@ -111,5 +113,6 @@ export function loadEnvConfig(rawEnv: Record<string, string | undefined>): EnvCo
     R2_PUBLIC_BASE_URL: parsed.R2_PUBLIC_BASE_URL,
     TELEGRAM_BOT_TOKEN: parsed.TELEGRAM_BOT_TOKEN,
     TELEGRAM_ADMIN_CHAT_ID: parsed.TELEGRAM_ADMIN_CHAT_ID,
+    CORS_ORIGIN: parsed.CORS_ORIGIN,
   };
 }

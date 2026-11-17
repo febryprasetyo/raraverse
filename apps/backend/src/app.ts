@@ -32,11 +32,16 @@ export async function buildApp(options: BuildAppOptions) {
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+  const corsOrigins = options.env.CORS_ORIGIN
+    ? options.env.CORS_ORIGIN.split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+    : options.env.NODE_ENV === 'production'
+      ? false
+      : ['http://127.0.0.1:3000', 'http://localhost:3000'];
+
   await app.register(cors, {
-    origin:
-      options.env.NODE_ENV === 'production'
-        ? false
-        : ['http://127.0.0.1:3000', 'http://localhost:3000'],
+    origin: corsOrigins,
     credentials: true,
   });
   registerErrorHandler(app);
