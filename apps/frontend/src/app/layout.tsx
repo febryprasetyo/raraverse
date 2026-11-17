@@ -1,17 +1,22 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { AppShell } from '@/components/app-shell';
+import { AuthProvider } from '@/lib/auth-context';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'ebieshop — Affiliate Automation Dashboard',
-  description: 'Control plane untuk kurasi produk Kalodata, studio konten 9:16, antrean publish, dan evaluasi mingguan.',
+  description:
+    'Control plane untuk kurasi produk Kalodata, studio konten 9:16, antrean publish, dan evaluasi mingguan.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
       <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
-        {children}
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );
