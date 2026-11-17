@@ -18,6 +18,10 @@ const EnvInputSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+  META_APP_SECRET: z.string().optional(),
+  META_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
+  META_OWN_IG_USER_ID: z.string().optional(),
+  META_OWN_PAGE_ID: z.string().optional(),
 });
 
 export interface EnvConfig {
@@ -33,6 +37,10 @@ export interface EnvConfig {
   DATABASE_URL: string;
   REDIS_URL: string;
   SKIP_QUEUE_CONNECTION: boolean;
+  META_APP_SECRET: string;
+  META_WEBHOOK_VERIFY_TOKEN: string;
+  META_OWN_IG_USER_ID?: string;
+  META_OWN_PAGE_ID?: string;
 }
 
 export function loadEnvConfig(rawEnv: Record<string, string | undefined>): EnvConfig {
@@ -62,5 +70,10 @@ export function loadEnvConfig(rawEnv: Record<string, string | undefined>): EnvCo
     DATABASE_URL: parsed.DATABASE_URL,
     REDIS_URL: parsed.REDIS_URL,
     SKIP_QUEUE_CONNECTION: parsed.SKIP_QUEUE_CONNECTION,
+    META_APP_SECRET: parsed.META_APP_SECRET ?? 'dev-meta-app-secret',
+    META_WEBHOOK_VERIFY_TOKEN:
+      parsed.META_WEBHOOK_VERIFY_TOKEN ?? 'dev-meta-verify-token',
+    META_OWN_IG_USER_ID: parsed.META_OWN_IG_USER_ID,
+    META_OWN_PAGE_ID: parsed.META_OWN_PAGE_ID,
   };
 }

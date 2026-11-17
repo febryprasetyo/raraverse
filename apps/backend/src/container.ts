@@ -2,18 +2,22 @@ import type { EnvConfig } from './config/env.js';
 import type {
   IAnalyticsRepository,
   IContentAssetRepository,
+  IDmLogRepository,
   IKalodataClient,
   ILlmProvider,
   IProductRepository,
 } from './adapters/contracts.js';
 import { ScriptGeneratorService } from './adapters/llm-providers.js';
+import { MockMetaGraphClient, type IMetaGraphClient } from './adapters/meta-graph-client.js';
 import {
   MockAnalyticsRepository,
   MockContentAssetRepository,
+  MockDmLogRepository,
   MockKalodataClient,
   MockLlmProvider,
   MockProductRepository,
 } from './adapters/mock-adapters.js';
+import { MetaAutoDmProcessor } from './services/meta-auto-dm.js';
 import { MockStoragePresigner, type IStoragePresigner } from './services/r2-presigner.js';
 
 export interface AppContainer {
@@ -23,6 +27,9 @@ export interface AppContainer {
   scriptGenerator: ScriptGeneratorService;
   products: IProductRepository;
   contentAssets: IContentAssetRepository;
+  dmLogs: IDmLogRepository;
+  metaClient: IMetaGraphClient;
+  metaAutoDm: MetaAutoDmProcessor;
   analytics: IAnalyticsRepository;
   storage: IStoragePresigner;
 }
@@ -36,8 +43,20 @@ export function createAppContainer(env: EnvConfig): AppContainer {
   const llm: ILlmProvider = new MockLlmProvider();
   const products: IProductRepository = new MockProductRepository();
   const contentAssets: IContentAssetRepository = new MockContentAssetRepository();
+  const dmLogs: IDmLogRepository = new MockDmLogRepository();
+  const metaClient: IMetaGraphClient = new MockMetaGraphClient();
   const analytics: IAnalyticsRepository = new MockAnalyticsRepository();
   const storage: IStoragePresigner = new MockStoragePresigner();
+  const ownAccountIds = [env.META_OWN_IG_USER_ID, env.META_OWN_PAGE_ID].filter(
+    (id): id is string => Boolean(id)
+  );
+  const metaAutoDm = new MetaAutoDmProcessor({
+    products,
+    dmLogs,
+    metaClient,
+    ownAccountIds,
+    igUserId: env.META_OWN_IG_USER_ID,
+  });
 
   return {
     env,
@@ -46,6 +65,9 @@ export function createAppContainer(env: EnvConfig): AppContainer {
     scriptGenerator: new ScriptGeneratorService(llm),
     products,
     contentAssets,
+    dmLogs,
+    metaClient,
+    metaAutoDm,
     analytics,
     storage,
   };

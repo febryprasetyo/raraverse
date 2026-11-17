@@ -1,19 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import {
   loadMockContentAssets,
+  loadMockDmLogs,
   loadMockKalodataCandidates,
   loadMockProducts,
   loadMockScriptGeneratorOutput,
   loadMockWeeklyEvaluation,
 } from '@ebieshop/mocks';
-import type { ContentAsset, ContentStatus, Product, ProductStatus } from '@ebieshop/shared';
+import type { ContentAsset, ContentStatus, DmLog, Product, ProductStatus } from '@ebieshop/shared';
 import { ConflictError, NotFoundError } from '../errors.js';
 import { assertValidProductTransition } from '../services/product-transitions.js';
 import type {
   CreateContentAssetInput,
+  CreateDmLogInput,
   CreateProductInput,
   IAnalyticsRepository,
   IContentAssetRepository,
+  IDmLogRepository,
   IKalodataClient,
   ILlmProvider,
   IProductRepository,
@@ -207,6 +210,35 @@ export class MockContentAssetRepository implements IContentAssetRepository {
     };
     this.items[idx] = updated;
     return updated;
+  }
+}
+
+export class MockDmLogRepository implements IDmLogRepository {
+  private readonly items: DmLog[];
+
+  constructor() {
+    this.items = loadMockDmLogs().map((item) => structuredClone(item));
+  }
+
+  async listDmLogs(): Promise<DmLog[]> {
+    return [...this.items];
+  }
+
+  async findByCommentId(commentId: string): Promise<DmLog | null> {
+    return this.items.find((item) => item.commentId === commentId) ?? null;
+  }
+
+  async createDmLog(input: CreateDmLogInput): Promise<DmLog> {
+    if (this.items.some((item) => item.commentId === input.commentId)) {
+      throw new ConflictError(`DM log for comment '${input.commentId}' already exists`);
+    }
+    const log: DmLog = {
+      id: randomUUID(),
+      ...input,
+      createdAt: new Date().toISOString(),
+    };
+    this.items.push(log);
+    return log;
   }
 }
 

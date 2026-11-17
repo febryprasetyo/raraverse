@@ -2,6 +2,8 @@ import type {
   AffiliateUrls,
   ContentAsset,
   ContentStatus,
+  DmLog,
+  DmStatus,
   KalodataCandidate,
   KalodataSnapshot,
   Product,
@@ -95,6 +97,26 @@ export interface IContentAssetRepository {
   getContentAssetById(id: string): Promise<ContentAsset | null>;
   createContentAsset(input: CreateContentAssetInput): Promise<ContentAsset>;
   updateContentAsset(id: string, patch: UpdateContentAssetInput): Promise<ContentAsset>;
+}
+
+export interface CreateDmLogInput {
+  productId: string | null;
+  platform: 'IG_REELS' | 'FB_REELS';
+  mediaId: string;
+  commentId: string;
+  senderId: string;
+  senderUsername: string | null;
+  commentText: string;
+  matchedKeyword: string | null;
+  publicReplySent: boolean;
+  dmSent: boolean;
+  status: DmStatus;
+}
+
+export interface IDmLogRepository {
+  listDmLogs(): Promise<DmLog[]>;
+  findByCommentId(commentId: string): Promise<DmLog | null>;
+  createDmLog(input: CreateDmLogInput): Promise<DmLog>;
 }
 
 export interface IAnalyticsRepository {
