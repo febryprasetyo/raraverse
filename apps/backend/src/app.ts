@@ -11,6 +11,7 @@ import { createBearerGuard } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { createQueueRegistry, type QueueRegistry } from './queues/registry.js';
 import { registerAdminRoutes } from './routes/admin.routes.js';
+import { registerAnalyticsRoutes } from './routes/analytics.routes.js';
 import { registerContentRoutes } from './routes/content.routes.js';
 import { registerHealthRoutes } from './routes/health.routes.js';
 import { registerMetaWebhookRoutes } from './routes/meta-webhook.routes.js';
@@ -60,6 +61,7 @@ export async function buildApp(options: BuildAppOptions) {
   registerContentRoutes(app, container, adminGuard, workerGuard, queueRegistry);
   registerMetaWebhookRoutes(app, container, adminGuard, queueRegistry);
   registerPublishRoutes(app, container, adminGuard, queueRegistry);
+  registerAnalyticsRoutes(app, container, adminGuard);
 
   return app;
 }
