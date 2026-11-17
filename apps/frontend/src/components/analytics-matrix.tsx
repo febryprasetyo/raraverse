@@ -73,25 +73,25 @@ export function AnalyticsMatrix({
         {report.items.map((item) => (
           <div
             key={item.productId}
-            className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4"
+            className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-4"
           >
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-semibold text-white">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                   {item.productName}
                 </h3>
                 <Badge tone={RECOMMENDATION_TONE[item.recommendation]}>
                   {item.recommendation}
                 </Badge>
               </div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-[var(--text-secondary)]">
                 Keyword:{' '}
-                <span className="font-mono text-emerald-300">
+                <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">
                   {item.triggerKeyword}
                 </span>{' '}
                 • Views: {item.totalViews.toLocaleString('id-ID')} • Komen:{' '}
                 {item.totalTriggerComments} • DM: {item.totalDmSent} • Klik:{' '}
-                {item.estimatedClicks} • Komisi: Rp
+                {item.estimatedClicks} • Est. Komisi: Rp
                 {item.estimatedCommissionIdr.toLocaleString('id-ID')}
               </p>
             </div>

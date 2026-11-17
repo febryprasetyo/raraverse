@@ -123,7 +123,7 @@ export function ProductsManager({
           <div className="min-w-56 flex-1">
             <label
               htmlFor="kalodata-niche"
-              className="block text-xs font-medium text-slate-300"
+              className="block text-xs font-medium text-[var(--text-secondary)]"
             >
               Niche / Kategori
             </label>
@@ -131,7 +131,7 @@ export function ProductsManager({
               id="kalodata-niche"
               value={niche}
               onChange={(e) => setNiche(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-slate-900 focus:outline-none dark:focus:border-emerald-500"
             />
           </div>
           <Button type="submit" disabled={syncing}>
@@ -164,7 +164,7 @@ export function ProductsManager({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari produk / keyword..."
-            className="rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-slate-400 focus:border-slate-900 focus:outline-none"
+            className="rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] py-1.5 pl-8 pr-3 text-xs text-[var(--text-primary)] placeholder-slate-400 focus:border-slate-900 focus:outline-none"
           />
         </div>
       </div>
@@ -195,7 +195,7 @@ export function ProductsManager({
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-white">
+                      <h3 className="text-base font-semibold text-[var(--text-primary)]">
                         {product.name}
                       </h3>
                       <Badge tone={product.status === 'ACTIVE' ? 'success' : 'info'}>
@@ -205,14 +205,14 @@ export function ProductsManager({
                         {product.rawMediaClipCount} klip mentah
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-300">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       Rp{product.priceIdr.toLocaleString('id-ID')} • Rating{' '}
                       {product.rating.toFixed(1)} • Komisi {product.commissionRatePct}%{' '}
                       {product.isCommissionXtra ? '(XTRA)' : ''}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-[var(--text-muted)]">
                       Keyword:{' '}
-                      <span className="font-mono text-emerald-300">
+                      <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">
                         {product.triggerKeyword}
                       </span>{' '}
                       • Biolink #{product.biolinkNumber} • Folder:{' '}
@@ -271,11 +271,11 @@ export function ProductsManager({
                 </div>
 
                 {isEditing ? (
-                  <div className="mt-4 grid gap-3 border-t border-slate-800 pt-4 sm:grid-cols-2">
+                  <div className="mt-4 grid gap-3 border-t border-[var(--border-hairline)] pt-4 sm:grid-cols-2">
                     <div>
                       <label
                         htmlFor={`kw-${product.id}`}
-                        className="block text-xs font-medium text-slate-300"
+                        className="block text-xs font-medium text-[var(--text-secondary)]"
                       >
                         Trigger Keyword
                       </label>
@@ -283,13 +283,13 @@ export function ProductsManager({
                         id={`kw-${product.id}`}
                         value={keywordDraft}
                         onChange={(e) => setKeywordDraft(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white"
+                        className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
                       />
                     </div>
                     <div>
                       <label
                         htmlFor={`bio-${product.id}`}
-                        className="block text-xs font-medium text-slate-300"
+                        className="block text-xs font-medium text-[var(--text-secondary)]"
                       >
                         Nomor Biolink
                       </label>
@@ -297,13 +297,13 @@ export function ProductsManager({
                         id={`bio-${product.id}`}
                         value={biolinkDraft}
                         onChange={(e) => setBiolinkDraft(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white"
+                        className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
                       />
                     </div>
                     <div>
                       <label
                         htmlFor={`shopee-${product.id}`}
-                        className="block text-xs font-medium text-slate-300"
+                        className="block text-xs font-medium text-[var(--text-secondary)]"
                       >
                         Shopee Shortlink
                       </label>
@@ -311,13 +311,13 @@ export function ProductsManager({
                         id={`shopee-${product.id}`}
                         value={shopeeDraft}
                         onChange={(e) => setShopeeDraft(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white"
+                        className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
                       />
                     </div>
                     <div>
                       <label
                         htmlFor={`raw-${product.id}`}
-                        className="block text-xs font-medium text-slate-300"
+                        className="block text-xs font-medium text-[var(--text-secondary)]"
                       >
                         Folder raw_media_dir
                       </label>
@@ -325,7 +325,7 @@ export function ProductsManager({
                         id={`raw-${product.id}`}
                         value={rawDirDraft}
                         onChange={(e) => setRawDirDraft(e.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white"
+                        className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
                       />
                     </div>
                     <div className="flex gap-2 sm:col-span-2">

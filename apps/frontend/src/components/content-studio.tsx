@@ -69,7 +69,7 @@ export function ContentStudio({
           <div>
             <label
               htmlFor="studio-product"
-              className="block text-xs font-medium text-slate-300"
+              className="block text-xs font-medium text-[var(--text-secondary)]"
             >
               Pilih Produk
             </label>
@@ -77,7 +77,7 @@ export function ContentStudio({
               id="studio-product"
               value={selectedProductId || products[0]?.id || ''}
               onChange={(e) => setSelectedProductId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
             >
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -89,7 +89,7 @@ export function ContentStudio({
           <div>
             <label
               htmlFor="studio-angle"
-              className="block text-xs font-medium text-slate-300"
+              className="block text-xs font-medium text-[var(--text-secondary)]"
             >
               Angle Konten
             </label>
@@ -97,13 +97,13 @@ export function ContentStudio({
               id="studio-angle"
               value={angle}
               onChange={(e) => setAngle(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
             />
           </div>
           <div>
             <label
               htmlFor="studio-voice"
-              className="block text-xs font-medium text-slate-300"
+              className="block text-xs font-medium text-[var(--text-secondary)]"
             >
               Suara TTS
             </label>
@@ -111,7 +111,7 @@ export function ContentStudio({
               id="studio-voice"
               value={voiceId}
               onChange={(e) => setVoiceId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
             >
               <option value="id-ID-GadisNeural">Gadis Neural (Ramah)</option>
               <option value="id-ID-ArdiNeural">Ardi Neural (Review Teknis)</option>
@@ -140,7 +140,6 @@ export function ContentStudio({
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-12">
-          {/* Asset selector + script details */}
           <div className="space-y-4 lg:col-span-7">
             <Card>
               <CardHeader
@@ -169,22 +168,26 @@ export function ContentStudio({
               />
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Hook</p>
-                  <p className="mt-1 text-white">{activeAsset.scriptJson.hook}</p>
+                  <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">
+                    Hook
+                  </p>
+                  <p className="mt-1 font-medium text-[var(--text-primary)]">
+                    {activeAsset.scriptJson.hook}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">
+                  <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">
                     Voiceover Transcript
                   </p>
-                  <p className="mt-1 rounded-lg bg-slate-950 p-3 text-slate-200">
+                  <p className="mt-1 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-3 text-[var(--text-secondary)]">
                     {activeAsset.scriptJson.scriptVoiceover}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">
+                  <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">
                     Pinned Comment
                   </p>
-                  <p className="mt-1 text-emerald-300">
+                  <p className="mt-1 font-medium text-emerald-700 dark:text-emerald-400">
                     {activeAsset.scriptJson.pinnedComment}
                   </p>
                 </div>
@@ -213,7 +216,6 @@ export function ContentStudio({
             </Card>
           </div>
 
-          {/* 9:16 Video Preview Player + Safe Zone Overlay */}
           <div className="lg:col-span-5">
             <Card>
               <CardHeader
@@ -229,7 +231,8 @@ export function ContentStudio({
                   </Button>
                 }
               />
-              <div className="relative mx-auto aspect-[9/16] w-full max-w-[290px] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+              {/* 9:16 video canvas intentionally uses dark cinema frame */}
+              <div className="relative mx-auto aspect-[9/16] w-full max-w-[290px] overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
                 <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                   <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
                     9:16 Vertical Preview
@@ -247,15 +250,12 @@ export function ContentStudio({
                     aria-label="Overlay Safe Zone TikTok dan Reels"
                     className="pointer-events-none absolute inset-0"
                   >
-                    {/* Right-side action buttons exclusion */}
                     <div className="absolute bottom-24 right-2 flex h-44 w-12 items-center justify-center rounded border border-amber-400/70 bg-amber-500/15 text-[10px] font-semibold text-amber-200">
                       UI
                     </div>
-                    {/* Subtitle safe-zone (MarginV=520) */}
                     <div className="absolute bottom-[27%] left-4 right-16 rounded border border-emerald-400/80 bg-emerald-500/15 px-2 py-1 text-center text-[11px] font-semibold text-emerald-200">
                       Subtitle Safe Zone (MarginV 520)
                     </div>
-                    {/* Bottom caption exclusion */}
                     <div className="absolute inset-x-0 bottom-0 flex h-[20%] items-center justify-center border-t border-rose-400/60 bg-rose-500/15 text-[10px] font-semibold text-rose-200">
                       Area Caption Platform
                     </div>

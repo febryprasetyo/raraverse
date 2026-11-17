@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Button } from './ui/button';
 
 export const NAV_ITEMS = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
@@ -79,28 +78,31 @@ export function AppShell({ children }: { children: ReactNode }) {
         Lewati ke konten utama
       </a>
 
-      {/* Desktop Sidebar */}
+      {/* Revenlo-style Sleek Desktop Sidebar */}
       <aside
         aria-label="Sidebar Navigasi"
-        className="hidden w-60 shrink-0 flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] md:flex"
+        className="hidden w-[256px] shrink-0 flex-col border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 py-5 md:flex"
       >
-        <div className="flex items-center justify-between border-b border-[var(--border-hairline)] px-5 py-4">
+        {/* Brand Header */}
+        <div className="mb-6 flex items-center justify-between px-1.5">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-xs font-bold text-white dark:bg-emerald-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white shadow-sm">
               E
             </div>
             <div>
-              <p className="text-sm font-bold tracking-tight text-[var(--text-primary)]">
+              <p className="text-[15px] font-bold tracking-tight text-[var(--text-primary)]">
                 EBIESHOP
               </p>
-              <p className="text-[11px] text-[var(--text-muted)]">creator affiliate</p>
+              <p className="text-[11px] font-medium text-[var(--text-muted)]">
+                Creator Studio
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={darkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
-            className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+            className="rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-2 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
           >
             {darkMode ? (
               <Sun className="h-4 w-4" aria-hidden="true" />
@@ -110,9 +112,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <nav aria-label="Menu Utama" className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Workspace
+        {/* Navigation Menu */}
+        <nav aria-label="Menu Utama" className="flex-1 space-y-1.5">
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+            Main Menu
           </p>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -127,39 +130,55 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
+                className={`group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                   active
-                    ? 'bg-[var(--bg-subtle)] font-semibold text-[var(--text-primary)]'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]/60 hover:text-[var(--text-primary)]'
+                    ? 'bg-slate-900 text-white shadow-[0_6px_16px_rgba(15,23,42,0.14)] dark:bg-emerald-600 dark:text-white'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <Icon
-                  className={`h-4 w-4 shrink-0 ${
-                    active ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-muted)]'
+                  className={`h-4 w-4 shrink-0 transition-colors ${
+                    active
+                      ? 'text-emerald-400 dark:text-white'
+                      : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
                   }`}
                   aria-hidden="true"
                 />
-                <span>{item.label}</span>
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-[var(--border-hairline)] p-3">
+        {/* Bottom Creator Session Card */}
+        <div className="mt-6 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-3.5">
+          <div className="mb-3 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              KA
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-[var(--text-primary)]">
+                Konten Kreator
+              </p>
+              <p className="truncate text-[11px] text-[var(--text-muted)]">
+                Affiliate Mode
+              </p>
+            </div>
+          </div>
+
           {isReady && token ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start"
+            <button
+              type="button"
               onClick={logout}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               Keluar Sesi
-            </Button>
+            </button>
           ) : (
             <Link
               href="/login"
-              className="block rounded-lg bg-slate-900 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-slate-800 dark:bg-emerald-600"
+              className="block rounded-xl bg-slate-900 px-3 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-800 dark:bg-emerald-600"
             >
               Masuk Admin
             </Link>
@@ -171,7 +190,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Mobile Header */}
         <header className="flex items-center justify-between border-b border-[var(--border-hairline)] bg-[var(--bg-surface)] px-4 py-3 md:hidden">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white dark:bg-emerald-600">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white">
               E
             </div>
             <span className="text-sm font-bold text-[var(--text-primary)]">EBIESHOP</span>
@@ -218,9 +237,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium ${
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium ${
                       active
-                        ? 'bg-[var(--bg-subtle)] font-semibold text-[var(--text-primary)]'
+                        ? 'bg-slate-900 text-white dark:bg-emerald-600'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
                     }`}
                   >

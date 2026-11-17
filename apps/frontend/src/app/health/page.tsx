@@ -62,11 +62,15 @@ export default function HealthPage() {
                   </Badge>
                 }
               />
-              <p className="text-xs text-slate-300">
-                Mode Sumber Data: <span className="font-mono text-white">{health.dataSourceMode}</span>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Mode Sumber Data:{' '}
+                <span className="font-mono font-semibold text-[var(--text-primary)]">
+                  {health.dataSourceMode}
+                </span>
               </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Heartbeat terakhir: {new Date(health.lastHeartbeatAt).toLocaleString('id-ID')}
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
+                Heartbeat terakhir:{' '}
+                {new Date(health.lastHeartbeatAt).toLocaleString('id-ID')}
               </p>
             </Card>
 
@@ -75,7 +79,9 @@ export default function HealthPage() {
               <div className="space-y-2">
                 {health.oauthProviders.map((p) => (
                   <div key={p.provider} className="flex items-center justify-between text-sm">
-                    <span className="uppercase text-slate-200">{p.provider}</span>
+                    <span className="font-medium uppercase text-[var(--text-primary)]">
+                      {p.provider}
+                    </span>
                     <Badge tone={p.status === 'HEALTHY' ? 'success' : 'warning'}>
                       {p.status} ({p.expiresInDays} hari)
                     </Badge>
@@ -90,9 +96,11 @@ export default function HealthPage() {
                 {health.playwrightSessions.map((s) => (
                   <div
                     key={s.platform}
-                    className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 p-3"
+                    className="flex items-center justify-between rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-3.5"
                   >
-                    <span className="text-sm font-medium text-white">{s.platform}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">
+                      {s.platform}
+                    </span>
                     <Badge tone={s.status === 'READY' ? 'success' : 'danger'}>
                       {s.status}
                     </Badge>

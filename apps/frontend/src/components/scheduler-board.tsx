@@ -87,7 +87,7 @@ export function SchedulerBoard({
             <div>
               <label
                 htmlFor="sched-asset"
-                className="block text-xs font-medium text-slate-300"
+                className="block text-xs font-medium text-[var(--text-secondary)]"
               >
                 Aset Konten (APPROVED)
               </label>
@@ -95,7 +95,7 @@ export function SchedulerBoard({
                 id="sched-asset"
                 value={selectedAssetId || approvedAssets[0]?.id || ''}
                 onChange={(e) => setSelectedAssetId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 {approvedAssets.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -107,7 +107,7 @@ export function SchedulerBoard({
             <div>
               <label
                 htmlFor="sched-visibility"
-                className="block text-xs font-medium text-slate-300"
+                className="block text-xs font-medium text-[var(--text-secondary)]"
               >
                 Visibilitas
               </label>
@@ -117,7 +117,7 @@ export function SchedulerBoard({
                 onChange={(e) =>
                   setVisibility(e.target.value as 'PUBLIC' | 'PRIVATE')
                 }
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="PUBLIC">PUBLIC (Produksi)</option>
                 <option value="PRIVATE">PRIVATE (Sandbox Fase 5)</option>
@@ -126,7 +126,7 @@ export function SchedulerBoard({
           </div>
 
           <fieldset>
-            <legend className="text-xs font-medium text-slate-300">
+            <legend className="text-xs font-medium text-[var(--text-secondary)]">
               Platform Target
             </legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -138,10 +138,10 @@ export function SchedulerBoard({
                     type="button"
                     aria-pressed={checked}
                     onClick={() => togglePlatform(platform)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
                       checked
-                        ? 'border-emerald-500 bg-emerald-600/25 text-emerald-200'
-                        : 'border-slate-700 bg-slate-900 text-slate-300'
+                        ? 'border-slate-900 bg-slate-900 text-white dark:border-emerald-500 dark:bg-emerald-600'
+                        : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
                     }`}
                   >
                     {platform}
@@ -182,25 +182,27 @@ export function SchedulerBoard({
       ) : (
         <Card>
           <CardHeader title="Daftar Publish Jobs" />
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-[var(--border-hairline)]">
             {jobs.map((job) => (
               <div
                 key={job.id}
                 className="flex flex-wrap items-center justify-between gap-3 py-3"
               >
                 <div>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">
                     {job.platform}{' '}
-                    <span className="font-mono text-xs text-slate-400">
+                    <span className="font-mono text-xs text-[var(--text-muted)]">
                       ({job.executionMode})
                     </span>
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[var(--text-muted)]">
                     Jadwal: {new Date(job.scheduledAt).toLocaleString('id-ID')} •
                     Percobaan: {job.attemptCount}
                   </p>
                   {job.lastError ? (
-                    <p className="mt-1 text-xs text-rose-400">{job.lastError}</p>
+                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                      {job.lastError}
+                    </p>
                   ) : null}
                 </div>
                 <Badge
