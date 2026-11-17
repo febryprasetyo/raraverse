@@ -51,6 +51,9 @@ export async function buildApp(options: BuildAppOptions) {
   }
 
   const container = createAppContainer(options.env);
+  app.addHook('onClose', async () => {
+    await container.close();
+  });
   const adminGuard = createBearerGuard(options.env.ADMIN_JWT_SECRET, 'admin');
   const workerGuard = createBearerGuard(options.env.WORKER_SHARED_SECRET, 'worker');
 

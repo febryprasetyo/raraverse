@@ -22,6 +22,18 @@ const EnvInputSchema = z.object({
   META_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
   META_OWN_IG_USER_ID: z.string().optional(),
   META_OWN_PAGE_ID: z.string().optional(),
+  META_PAGE_ACCESS_TOKEN: z.string().optional(),
+  KALODATA_API_KEY: z.string().optional(),
+  KALODATA_BASE_URL: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  R2_ENDPOINT: z.string().optional(),
+  R2_BUCKET: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_PUBLIC_BASE_URL: z.string().optional(),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_ADMIN_CHAT_ID: z.string().optional(),
 });
 
 export interface EnvConfig {
@@ -41,6 +53,18 @@ export interface EnvConfig {
   META_WEBHOOK_VERIFY_TOKEN: string;
   META_OWN_IG_USER_ID?: string;
   META_OWN_PAGE_ID?: string;
+  META_PAGE_ACCESS_TOKEN?: string;
+  KALODATA_API_KEY?: string;
+  KALODATA_BASE_URL?: string;
+  GEMINI_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  R2_ENDPOINT?: string;
+  R2_BUCKET?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  R2_PUBLIC_BASE_URL?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_ADMIN_CHAT_ID?: string;
 }
 
 export function loadEnvConfig(rawEnv: Record<string, string | undefined>): EnvConfig {
@@ -75,5 +99,17 @@ export function loadEnvConfig(rawEnv: Record<string, string | undefined>): EnvCo
       parsed.META_WEBHOOK_VERIFY_TOKEN ?? 'dev-meta-verify-token',
     META_OWN_IG_USER_ID: parsed.META_OWN_IG_USER_ID,
     META_OWN_PAGE_ID: parsed.META_OWN_PAGE_ID,
+    META_PAGE_ACCESS_TOKEN: parsed.META_PAGE_ACCESS_TOKEN,
+    KALODATA_API_KEY: parsed.KALODATA_API_KEY,
+    KALODATA_BASE_URL: parsed.KALODATA_BASE_URL,
+    GEMINI_API_KEY: parsed.GEMINI_API_KEY,
+    OPENAI_API_KEY: parsed.OPENAI_API_KEY,
+    R2_ENDPOINT: parsed.R2_ENDPOINT,
+    R2_BUCKET: parsed.R2_BUCKET,
+    R2_ACCESS_KEY_ID: parsed.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: parsed.R2_SECRET_ACCESS_KEY,
+    R2_PUBLIC_BASE_URL: parsed.R2_PUBLIC_BASE_URL,
+    TELEGRAM_BOT_TOKEN: parsed.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_ADMIN_CHAT_ID: parsed.TELEGRAM_ADMIN_CHAT_ID,
   };
 }
