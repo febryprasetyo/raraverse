@@ -88,7 +88,11 @@ export class GeminiLlmProvider implements ILlmProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error (${response.status} ${response.statusText})`);
+      const bodyText = await response.text().catch(() => '');
+      throw new AppError(
+        response.status === 429 ? 429 : 502,
+        `Gemini API error (${response.status} ${response.statusText}): ${bodyText.slice(0, 200)}`
+      );
     }
 
     const data = (await response.json()) as {
