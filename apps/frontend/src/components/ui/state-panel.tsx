@@ -37,6 +37,21 @@ export function StatePanel({ status, title, description, onRetry }: StatePanelPr
             Coba Lagi
           </Button>
         ) : null}
+        {description?.includes('401') ? (
+          <a
+            href="/login"
+            onClick={() => {
+              try {
+                window.localStorage.removeItem('ebieshop_admin_token');
+              } catch {
+                // Ignore storage errors
+              }
+            }}
+            className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
+          >
+            Masuk Ulang (Reset Token)
+          </a>
+        ) : null}
       </div>
     );
   }
