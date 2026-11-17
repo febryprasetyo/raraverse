@@ -81,7 +81,15 @@ export function createBackendClient(options: ApiClientOptions) {
     });
 
     if (!response.ok) {
-      throw new Error(`Backend request failed with status ${response.status}`);
+      const errBody = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+      } | null;
+      const detail = errBody?.error?.message;
+      throw new Error(
+        detail
+          ? `Backend request failed (${response.status}): ${detail}`
+          : `Backend request failed with status ${response.status}`
+      );
     }
 
     const json: unknown = await response.json();

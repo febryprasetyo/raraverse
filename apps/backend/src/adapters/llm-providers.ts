@@ -3,6 +3,7 @@ import {
   type Product,
   type ScriptGeneratorOutput,
 } from '@ebieshop/shared';
+import { AppError } from '../errors.js';
 import type { ILlmProvider } from './contracts.js';
 
 export interface LlmProviderOptions {
@@ -142,7 +143,11 @@ export class OpenAiLlmProvider implements ILlmProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error (${response.status} ${response.statusText})`);
+      const bodyText = await response.text().catch(() => '');
+      throw new AppError(
+        response.status === 429 ? 429 : 502,
+        `OpenAI API error (${response.status} ${response.statusText}): ${bodyText.slice(0, 200)}`
+      );
     }
 
     const data = (await response.json()) as {
