@@ -42,6 +42,8 @@ export async function buildApp(options: BuildAppOptions) {
 
   await app.register(cors, {
     origin: corsOrigins,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
   registerErrorHandler(app);
