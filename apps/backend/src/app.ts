@@ -18,6 +18,7 @@ import { registerMetaWebhookRoutes } from './routes/meta-webhook.routes.js';
 import { registerProductRoutes } from './routes/products.routes.js';
 import { registerPublishRoutes } from './routes/publish.routes.js';
 import { registerWorkerRoutes } from './routes/workers.routes.js';
+import { registerBackendCronJobs, startBackendWorkers } from './workers/index.js';
 
 export interface BuildAppOptions {
   env: EnvConfig;
@@ -54,6 +55,14 @@ export async function buildApp(options: BuildAppOptions) {
   app.addHook('onClose', async () => {
     await container.close();
   });
+
+  if (queueRegistry) {
+    const workerRuntime = startBackendWorkers(container, queueRegistry);
+    await registerBackendCronJobs(queueRegistry);
+    app.addHook('onClose', async () => {
+      await workerRuntime.close();
+    });
+  }
   const adminGuard = createBearerGuard(options.env.ADMIN_JWT_SECRET, 'admin');
   const workerGuard = createBearerGuard(options.env.WORKER_SHARED_SECRET, 'worker');
 
