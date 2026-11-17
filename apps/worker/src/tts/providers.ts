@@ -83,7 +83,10 @@ export class MockTtsProvider implements ITtsProvider {
 export class EdgeTtsProvider implements ITtsProvider {
   async synthesize(input: TtsSynthesisInput): Promise<TtsSynthesisResult> {
     const voice = input.voiceId || 'id-ID-GadisNeural';
-    await execFileAsync('edge-tts', [
+    const pythonBin = process.env.PYTHON_BIN || 'python';
+    await execFileAsync(pythonBin, [
+      '-m',
+      'edge_tts',
       '--voice',
       voice,
       '--text',
