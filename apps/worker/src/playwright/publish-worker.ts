@@ -1,6 +1,7 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { chromium, type Page } from 'playwright';
 import type { PublishJobPayload } from '@ebieshop/shared';
 import {
   detectAuthChallenge,
@@ -20,6 +21,38 @@ export interface PlaywrightPublishDeps {
   headless: boolean;
   storageDir?: string;
   fetchFn?: typeof fetch;
+}
+
+async function fillCaptionAndTagProduct(
+  page: Page,
+  job: PublishJobPayload,
+  platformKey: 'shopee' | 'tiktok'
+): Promise<void> {
+  const captionSelector =
+    platformKey === 'shopee'
+      ? 'textarea[placeholder*="caption" i], div[contenteditable="true"]'
+      : 'div[contenteditable="true"]';
+  const captionInput = page.locator(captionSelector).first();
+  if ((await captionInput.count()) > 0) {
+    await captionInput.click();
+    await waitHumanJitter();
+    await captionInput.fill(job.captionSeo);
+    await waitHumanJitter();
+  }
+
+  const productSearch = job.tiktokProductId ?? job.productName;
+  const addProductBtn = page
+    .getByRole('button', { name: /tambah produk|add product|product/i })
+    .first();
+  if ((await addProductBtn.count()) > 0 && productSearch) {
+    await addProductBtn.click();
+    await waitHumanJitter();
+    const searchInput = page.locator('input[type="search"], input[placeholder*="cari" i]').first();
+    if ((await searchInput.count()) > 0) {
+      await searchInput.fill(productSearch);
+      await waitHumanJitter();
+    }
+  }
 }
 
 export async function processPlaywrightPublish(
@@ -46,27 +79,7 @@ export async function processPlaywrightPublish(
     }
     await writeFile(localVideoPath, Buffer.from(await res.arrayBuffer()));
 
-    const playwrightModuleName = 'playwright';
-    const pw = (await import(playwrightModuleName)) as {
-      chromium: {
-        launch: (opts: { headless: boolean }) => Promise<{
-          newContext: (opts: {
-            storageState: string;
-            viewport: { width: number; height: number };
-          }) => Promise<{
-            newPage: () => Promise<{
-              goto: (url: string, opts?: { waitUntil?: string }) => Promise<void>;
-              url: () => string;
-              innerText: (selector: string) => Promise<string>;
-              setInputFiles: (selector: string, files: string) => Promise<void>;
-            }>;
-          }>;
-          close: () => Promise<void>;
-        }>;
-      };
-    };
-
-    const browser = await pw.chromium.launch({ headless: deps.headless });
+    const browser = await chromium.launch({ headless: deps.headless });
     try {
       const context = await browser.newContext({
         storageState: storageStatePath,
@@ -86,6 +99,16 @@ export async function processPlaywrightPublish(
 
       await page.setInputFiles('input[type="file"]', localVideoPath);
       await waitHumanJitter();
+
+      await fillCaptionAndTagProduct(page, job, platformKey);
+
+      const publishBtn = page
+        .getByRole('button', { name: /publish|posting|unggah/i })
+        .first();
+      if ((await publishBtn.count()) > 0) {
+        await publishBtn.click();
+        await waitHumanJitter();
+      }
 
       return {
         publishJobId: job.publishJobId,

@@ -68,7 +68,7 @@ export async function buildApp(options: BuildAppOptions) {
 
   registerHealthRoutes(app, options.env);
   registerAdminRoutes(app, adminGuard);
-  registerWorkerRoutes(app, workerGuard);
+  registerWorkerRoutes(app, workerGuard, container);
   registerProductRoutes(app, container, adminGuard);
   registerContentRoutes(app, container, adminGuard, workerGuard, queueRegistry);
   registerMetaWebhookRoutes(app, container, adminGuard, queueRegistry);

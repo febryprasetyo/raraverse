@@ -7,6 +7,7 @@ import {
 import { loadWorkerEnvConfig } from './config/env.js';
 import { processLocalVideoRender } from './ffmpeg/render-worker.js';
 import { processPlaywrightPublish } from './playwright/publish-worker.js';
+import { NeedsManualLoginError } from './playwright/session-guard.js';
 import {
   EdgeTtsProvider,
   ElevenLabsProvider,
@@ -56,10 +57,34 @@ export async function startWorkerRuntime() {
       const parsed = PublishJobPayloadSchema.parse(job.data);
       const publicR2BaseUrl =
         process.env.R2_PUBLIC_BASE_URL ?? 'http://127.0.0.1:9000/ebieshop-mock';
-      return processPlaywrightPublish(parsed, {
-        publicR2BaseUrl,
-        headless: env.PLAYWRIGHT_HEADLESS,
-      });
+      try {
+        return await processPlaywrightPublish(parsed, {
+          publicR2BaseUrl,
+          headless: env.PLAYWRIGHT_HEADLESS,
+        });
+      } catch (err) {
+        if (
+          err instanceof NeedsManualLoginError &&
+          (parsed.platform === 'SHOPEE_VIDEO' || parsed.platform === 'TIKTOK_STUDIO')
+        ) {
+          await fetch(
+            `${env.VPS_API_URL.replace(/\/$/, '')}/api/v1/workers/session-expired`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${env.WORKER_SHARED_SECRET}`,
+              },
+              body: JSON.stringify({
+                publishJobId: parsed.publishJobId,
+                platform: parsed.platform,
+                reason: err.message,
+              }),
+            }
+          ).catch(() => {});
+        }
+        throw err;
+      }
     },
     { connection, concurrency: 1 }
   );

@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { resolve } from 'node:path';
+import { chromium } from 'playwright';
 
 type SupportedLoginPlatform = 'shopee' | 'tiktok';
 
@@ -9,24 +10,11 @@ const LOGIN_URLS: Record<SupportedLoginPlatform, string> = {
   tiktok: 'https://www.tiktok.com/tiktokstudio/upload',
 };
 
-export async function runInteractiveLogin(platform: SupportedLoginPlatform): Promise<void> {
+export async function runInteractiveLogin(
+  platform: SupportedLoginPlatform
+): Promise<void> {
   const storagePath = resolve(process.cwd(), `storageState.${platform}.json`);
-  const playwrightModuleName = 'playwright';
-  const pw = (await import(playwrightModuleName)) as {
-    chromium: {
-      launch: (opts: { headless: boolean }) => Promise<{
-        newContext: (opts: {
-          viewport: { width: number; height: number };
-        }) => Promise<{
-          newPage: () => Promise<{ goto: (url: string) => Promise<void> }>;
-          storageState: (opts: { path: string }) => Promise<void>;
-        }>;
-        close: () => Promise<void>;
-      }>;
-    };
-  };
-
-  const browser = await pw.chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: false });
   try {
     const context = await browser.newContext({
       viewport: { width: 1366, height: 768 },
