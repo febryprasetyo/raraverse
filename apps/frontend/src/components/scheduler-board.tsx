@@ -50,6 +50,7 @@ export function SchedulerBoard({
   ]);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   function togglePlatform(platform: TargetPlatform) {
     setSelectedPlatforms((prev) =>
@@ -64,12 +65,17 @@ export function SchedulerBoard({
     const assetId = selectedAssetId || approvedAssets[0]?.id;
     if (!assetId || selectedPlatforms.length === 0) return;
     setSubmitting(true);
+    setActionError(null);
     try {
       await onSchedule({
         contentAssetId: assetId,
         platforms: selectedPlatforms,
         visibility,
       });
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Gagal menjadwalkan publish'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -162,6 +168,21 @@ export function SchedulerBoard({
             {submitting ? 'Menjadwalkan...' : 'Masukkan ke Antrean BullMQ'}
           </Button>
         </form>
+        {actionError ? (
+          <div
+            role="alert"
+            className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+          >
+            <span>{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="font-semibold underline"
+            >
+              Tutup
+            </button>
+          </div>
+        ) : null}
       </Card>
 
       {loading ? (

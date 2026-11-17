@@ -55,6 +55,7 @@ export function ProductsManager({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [niche, setNiche] = useState('perlengkapan_dapur');
   const [syncing, setSyncing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [keywordDraft, setKeywordDraft] = useState('');
   const [biolinkDraft, setBiolinkDraft] = useState('');
@@ -64,8 +65,13 @@ export function ProductsManager({
   async function handleSync(e: FormEvent) {
     e.preventDefault();
     setSyncing(true);
+    setActionError(null);
     try {
       await onSyncKalodata({ niche, maxPriceIdr: 99999, minRating: 4.8 });
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Gagal sinkronisasi Kalodata'
+      );
     } finally {
       setSyncing(false);
     }
@@ -138,6 +144,21 @@ export function ProductsManager({
             {syncing ? 'Menyinkronkan...' : 'Sinkronkan Kalodata'}
           </Button>
         </form>
+        {actionError ? (
+          <div
+            role="alert"
+            className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+          >
+            <span>{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="font-semibold underline"
+            >
+              Tutup
+            </button>
+          </div>
+        ) : null}
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -40,6 +40,7 @@ export function ContentStudio({
   const [angle, setAngle] = useState('problem-solution');
   const [voiceId, setVoiceId] = useState('id-ID-GadisNeural');
   const [generating, setGenerating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState<string>(assets[0]?.id ?? '');
   const [showSafeZone, setShowSafeZone] = useState(true);
 
@@ -51,8 +52,13 @@ export function ContentStudio({
     const targetId = selectedProductId || products[0]?.id;
     if (!targetId) return;
     setGenerating(true);
+    setActionError(null);
     try {
       await onGenerate({ productId: targetId, angle, ttsVoiceId: voiceId });
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Gagal men-generate konten'
+      );
     } finally {
       setGenerating(false);
     }
@@ -121,6 +127,21 @@ export function ContentStudio({
             {generating ? 'Memproses...' : 'Generate Konten'}
           </Button>
         </form>
+        {actionError ? (
+          <div
+            role="alert"
+            className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+          >
+            <span>{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="font-semibold underline"
+            >
+              Tutup
+            </button>
+          </div>
+        ) : null}
       </Card>
 
       {loading ? (
