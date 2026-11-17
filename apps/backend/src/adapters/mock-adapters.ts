@@ -1,20 +1,24 @@
 import { randomUUID } from 'node:crypto';
 import {
+  loadMockContentAssets,
   loadMockKalodataCandidates,
   loadMockProducts,
   loadMockScriptGeneratorOutput,
   loadMockWeeklyEvaluation,
 } from '@ebieshop/mocks';
-import type { Product, ProductStatus } from '@ebieshop/shared';
+import type { ContentAsset, ContentStatus, Product, ProductStatus } from '@ebieshop/shared';
 import { ConflictError, NotFoundError } from '../errors.js';
 import { assertValidProductTransition } from '../services/product-transitions.js';
 import type {
+  CreateContentAssetInput,
   CreateProductInput,
   IAnalyticsRepository,
+  IContentAssetRepository,
   IKalodataClient,
   ILlmProvider,
   IProductRepository,
   KalodataFilterInput,
+  UpdateContentAssetInput,
   UpdateProductInput,
 } from './contracts.js';
 
@@ -146,6 +150,62 @@ export class MockProductRepository implements IProductRepository {
       updatedAt: new Date().toISOString(),
     };
     this.items[index] = updated;
+    return updated;
+  }
+}
+
+export class MockContentAssetRepository implements IContentAssetRepository {
+  private readonly items: ContentAsset[];
+
+  constructor() {
+    this.items = loadMockContentAssets().map((item) => structuredClone(item));
+  }
+
+  async listContentAssets(filter?: { status?: ContentStatus }): Promise<ContentAsset[]> {
+    if (!filter?.status) {
+      return [...this.items];
+    }
+    return this.items.filter((item) => item.status === filter.status);
+  }
+
+  async getContentAssetById(id: string): Promise<ContentAsset | null> {
+    return this.items.find((item) => item.id === id) ?? null;
+  }
+
+  async createContentAsset(input: CreateContentAssetInput): Promise<ContentAsset> {
+    const asset: ContentAsset = {
+      id: randomUUID(),
+      productId: input.productId,
+      llmProvider: input.llmProvider,
+      ttsProvider: input.ttsProvider,
+      ttsVoiceId: input.ttsVoiceId,
+      scriptJson: input.scriptJson,
+      audioR2Key: null,
+      subtitleR2Key: null,
+      videoR2Key: null,
+      videoSha256: null,
+      durationSec: null,
+      resolution: '1080x1920',
+      status: input.status ?? 'RENDERING_VIDEO',
+      rejectionReason: null,
+    };
+    this.items.push(asset);
+    return asset;
+  }
+
+  async updateContentAsset(
+    id: string,
+    patch: UpdateContentAssetInput
+  ): Promise<ContentAsset> {
+    const idx = this.items.findIndex((item) => item.id === id);
+    if (idx === -1) {
+      throw new NotFoundError(`ContentAsset '${id}' not found`);
+    }
+    const updated: ContentAsset = {
+      ...this.items[idx]!,
+      ...patch,
+    };
+    this.items[idx] = updated;
     return updated;
   }
 }

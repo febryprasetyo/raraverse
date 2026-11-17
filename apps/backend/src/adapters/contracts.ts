@@ -1,5 +1,7 @@
 import type {
   AffiliateUrls,
+  ContentAsset,
+  ContentStatus,
   KalodataCandidate,
   KalodataSnapshot,
   Product,
@@ -67,6 +69,32 @@ export interface IProductRepository {
   findByKalodataId(kalodataProductId: string): Promise<Product | null>;
   createProduct(input: CreateProductInput): Promise<Product>;
   updateProduct(id: string, patch: UpdateProductInput): Promise<Product>;
+}
+
+export interface CreateContentAssetInput {
+  productId: string;
+  llmProvider: string;
+  ttsProvider: 'edge-tts' | 'elevenlabs';
+  ttsVoiceId: string;
+  scriptJson: ScriptGeneratorOutput;
+  status?: ContentStatus;
+}
+
+export interface UpdateContentAssetInput {
+  audioR2Key?: string | null;
+  subtitleR2Key?: string | null;
+  videoR2Key?: string | null;
+  videoSha256?: string | null;
+  durationSec?: number | null;
+  status?: ContentStatus;
+  rejectionReason?: string | null;
+}
+
+export interface IContentAssetRepository {
+  listContentAssets(filter?: { status?: ContentStatus }): Promise<ContentAsset[]>;
+  getContentAssetById(id: string): Promise<ContentAsset | null>;
+  createContentAsset(input: CreateContentAssetInput): Promise<ContentAsset>;
+  updateContentAsset(id: string, patch: UpdateContentAssetInput): Promise<ContentAsset>;
 }
 
 export interface IAnalyticsRepository {
