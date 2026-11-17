@@ -1,0 +1,65 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "kalodataProductId": "kd_rak_001",
+    "niche": "perlengkapan_dapur",
+    "name": "Rak Bumbu Dapur 2 Tingkat Baja Karbon Anti Karat",
+    "priceIdr": 49900,
+    "rating": 4.9,
+    "commissionRatePct": 12.5,
+    "isCommissionXtra": true,
+    "isOfficialStore": true,
+    "biolinkNumber": "001",
+    "triggerKeyword": "RAK01",
+    "affiliateUrls": {
+      "shopeeShortlink": "https://shope.ee/mock-rak01",
+      "tokopediaShortlink": "https://tokopedia.link/mock-rak01",
+      "tiktokProductId": "172938475610",
+      "tiktokShortlink": "https://vt.tiktok.com/mock-rak01",
+      "biolinkAnchorUrl": "https://desty.page/ebieshop#001"
+    },
+    "kalodataSnapshot": {
+      "weeklyRevenueIdr": 18500000,
+      "weeklyUnitsSold": 370,
+      "referenceVideoUrls": [
+        "https://cdn.example.com/kalodata/ref-rak-01.mp4"
+      ],
+      "syncedAt": "2026-11-16T07:00:00.000Z"
+    },
+    "rawMediaDir": "raw_media_dir/550e8400-e29b-41d4-a716-446655440001",
+    "rawMediaClipCount": 4,
+    "status": "ACTIVE",
+    "createdAt": "2026-11-16T07:00:00.000Z",
+    "updatedAt": "2026-11-16T07:00:00.000Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "kalodataProductId": "kd_lampu_002",
+    "niche": "perlengkapan_dapur",
+    "name": "Lampu Sensor Gerak LED Lemari Dapur USB Rechargeable",
+    "priceIdr": 32500,
+    "rating": 4.85,
+    "commissionRatePct": 15.0,
+    "isCommissionXtra": true,
+    "isOfficialStore": false,
+    "biolinkNumber": "002",
+    "triggerKeyword": "LAMPU02",
+    "affiliateUrls": {
+      "shopeeShortlink": "https://shope.ee/mock-lampu02",
+      "biolinkAnchorUrl": "https://desty.page/ebieshop#002"
+    },
+    "kalodataSnapshot": {
+      "weeklyRevenueIdr": 11200000,
+      "weeklyUnitsSold": 344,
+      "referenceVideoUrls": [
+        "https://cdn.example.com/kalodata/ref-lampu-02.mp4"
+      ],
+      "syncedAt": "2026-11-16T07:00:00.000Z"
+    },
+    "rawMediaDir": "raw_media_dir/550e8400-e29b-41d4-a716-446655440002",
+    "rawMediaClipCount": 3,
+    "status": "CURATED",
+    "createdAt": "2026-11-16T07:05:00.000Z",
+    "updatedAt": "2026-11-16T07:05:00.000Z"
+  }
+]

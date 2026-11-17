@@ -1,0 +1,31 @@
+# Dependencies & Build
+node_modules/
+dist/
+build/
+.next/
+**/next-env.d.ts
+.turbo/
+coverage/
+
+# Secrets & Environment
+.env
+.env.*
+!.env.*.example
+docs/api.md
+
+# Playwright & Local Media
+storageState*.json
+raw_media_dir/
+*.mp4
+*.mp3
+*.srt
+*.ass
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/*
+

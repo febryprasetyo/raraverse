@@ -1,0 +1,18 @@
+{
+  "hook": "Meja dapur sempit bikin sumpek? Cek rak bumbu lipat di bawah 50 ribu ini!",
+  "scriptVoiceover": "Sering kesal botol bumbu berantakan di dapur sempit? Rak bumbu dua tingkat ini bahannya baja karbon anti karat, tinggal pasang tanpa bor dinding. Harganya gak sampai lima puluh ribu, stok promo sering habis! Mau link resminya? Komen RAK01 sekarang, nanti aku kirim link-nya langsung ke DM kamu!",
+  "captionSeo": "Solusi dapur sempit jadi estetik tanpa bor dinding! Komen RAK01 biar link belinya langsung masuk DM kamu ya.",
+  "hashtags": [
+    "#rakdapur",
+    "#dapurminimalis",
+    "#racunshopee",
+    "#homedecorindonesia"
+  ],
+  "pinnedComment": "Yang mau link produk resmi & promo hari ini, langsung komen RAK01 atau cek nomor #001 di bio ya!",
+  "sceneCues": [
+    { "order": 1, "visualFocus": "hook_problem", "durationSec": 3.5 },
+    { "order": 2, "visualFocus": "product_detail_material", "durationSec": 7.0 },
+    { "order": 3, "visualFocus": "before_after_usage", "durationSec": 8.0 },
+    { "order": 4, "visualFocus": "cta_comment_keyword", "durationSec": 4.5 }
+  ]
+}

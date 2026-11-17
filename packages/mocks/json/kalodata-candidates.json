@@ -1,0 +1,32 @@
+[
+  {
+    "kalodataProductId": "kd_rak_001",
+    "name": "Rak Bumbu Dapur 2 Tingkat Baja Karbon Anti Karat",
+    "niche": "perlengkapan_dapur",
+    "priceIdr": 49900,
+    "rating": 4.9,
+    "commissionRatePct": 12.5,
+    "isCommissionXtra": true,
+    "isOfficialStore": true,
+    "weeklyRevenueIdr": 18500000,
+    "weeklyUnitsSold": 370,
+    "referenceVideoUrls": [
+      "https://cdn.example.com/kalodata/ref-rak-01.mp4"
+    ]
+  },
+  {
+    "kalodataProductId": "kd_lampu_002",
+    "name": "Lampu Sensor Gerak LED Lemari Dapur USB Rechargeable",
+    "niche": "perlengkapan_dapur",
+    "priceIdr": 32500,
+    "rating": 4.85,
+    "commissionRatePct": 15.0,
+    "isCommissionXtra": true,
+    "isOfficialStore": false,
+    "weeklyRevenueIdr": 11200000,
+    "weeklyUnitsSold": 344,
+    "referenceVideoUrls": [
+      "https://cdn.example.com/kalodata/ref-lampu-02.mp4"
+    ]
+  }
+]

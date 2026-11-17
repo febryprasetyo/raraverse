@@ -1,0 +1,32 @@
+{
+  "weekStartDate": "2026-11-09T00:00:00.000Z",
+  "generatedAt": "2026-11-15T13:00:00.000Z",
+  "items": [
+    {
+      "productId": "550e8400-e29b-41d4-a716-446655440001",
+      "productName": "Rak Bumbu Dapur 2 Tingkat Baja Karbon Anti Karat",
+      "triggerKeyword": "RAK01",
+      "videosPublished": 6,
+      "totalViews": 48200,
+      "totalTriggerComments": 312,
+      "totalDmSent": 308,
+      "estimatedClicks": 245,
+      "estimatedCommissionIdr": 745000,
+      "recommendation": "SCALE",
+      "operatorDecision": "PENDING"
+    },
+    {
+      "productId": "550e8400-e29b-41d4-a716-446655440002",
+      "productName": "Lampu Sensor Gerak LED Lemari Dapur USB Rechargeable",
+      "triggerKeyword": "LAMPU02",
+      "videosPublished": 4,
+      "totalViews": 12400,
+      "totalTriggerComments": 18,
+      "totalDmSent": 18,
+      "estimatedClicks": 11,
+      "estimatedCommissionIdr": 42000,
+      "recommendation": "OPTIMIZE_HOOK",
+      "operatorDecision": "PENDING"
+    }
+  ]
+}

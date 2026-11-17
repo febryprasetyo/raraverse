@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ebieshop-postgres
+    environment:
+      POSTGRES_USER: ebieshop
+      POSTGRES_PASSWORD: ebieshop_dev_password
+      POSTGRES_DB: ebieshop
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ebieshop -d ebieshop']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ebieshop-redis
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ebieshop-backend-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.development
+    environment:
+      NODE_ENV: development
+      PORT: '3001'
+      DATABASE_URL: postgresql://ebieshop:ebieshop_dev_password@postgres:5432/ebieshop
+      REDIS_URL: redis://redis:6379
+      SKIP_QUEUE_CONNECTION: 'false'
+      CHOKIDAR_USEPOLLING: 'true'
+    ports:
+      - '127.0.0.1:3001:3001'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/shared/node_modules
+      - /app/packages/db/node_modules
+      - /app/packages/mocks/node_modules
+      - /app/apps/backend/node_modules
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.dev
+    container_name: ebieshop-frontend-dev
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:3001
+      WATCHPACK_POLLING: 'true'
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/shared/node_modules
+      - /app/apps/frontend/node_modules
+      - /app/apps/frontend/.next
+
+volumes:
+  pgdata:
+  redisdata:
