@@ -1,4 +1,5 @@
 import type {
+  AffiliateLink,
   AffiliateUrls,
   ContentAsset,
   ContentStatus,
@@ -7,12 +8,21 @@ import type {
   ExecutionMode,
   KalodataCandidate,
   KalodataSnapshot,
+  LnkBioMetricsSnapshot,
+  LnkBioSyncLog,
+  LnkBioSyncOperation,
+  LnkBioSyncStatus,
   Product,
   ProductStatus,
   PublishJobRecord,
   PublishStatus,
   ScriptGeneratorOutput,
   TargetPlatform,
+  ThreadsMediaType,
+  ThreadsPostRecord,
+  ThreadsPostStatus,
+  ThreadsSyncLog,
+  ThreadsSyncOperation,
   WeeklyEvaluationReport,
 } from '@ebieshop/shared';
 
@@ -27,12 +37,27 @@ export interface IKalodataClient {
   fetchWinningCandidates(filter: KalodataFilterInput): Promise<KalodataCandidate[]>;
 }
 
+export interface ThreadsCopyOutput {
+  rootText: string;
+  replyText: string;
+}
+
 export interface ILlmProvider {
   readonly providerName?: string;
   generateScript(input: {
     product: Product;
     angle: string;
+    storyboardPrompt?: string;
   }): Promise<ScriptGeneratorOutput>;
+  generateTriggerKeyword?(input: {
+    product: Product;
+    biolinkNumber: string;
+    usedKeywords: string[];
+  }): Promise<string>;
+  generateThreadsCopy?(input: {
+    product: Product;
+    affiliateUrl: string;
+  }): Promise<ThreadsCopyOutput>;
 }
 
 export interface CreateProductInput {
@@ -63,6 +88,7 @@ export interface UpdateProductInput {
   biolinkNumber?: string;
   triggerKeyword?: string;
   affiliateUrls?: AffiliateUrls;
+  kalodataSnapshot?: KalodataSnapshot | null;
   rawMediaDir?: string;
   rawMediaClipCount?: number;
   status?: ProductStatus;
@@ -75,6 +101,7 @@ export interface IProductRepository {
   findByKalodataId(kalodataProductId: string): Promise<Product | null>;
   createProduct(input: CreateProductInput): Promise<Product>;
   updateProduct(id: string, patch: UpdateProductInput): Promise<Product>;
+  deleteProduct(id: string): Promise<void>;
 }
 
 export interface CreateContentAssetInput {
@@ -87,6 +114,7 @@ export interface CreateContentAssetInput {
 }
 
 export interface UpdateContentAssetInput {
+  scriptJson?: ScriptGeneratorOutput;
   audioR2Key?: string | null;
   subtitleR2Key?: string | null;
   videoR2Key?: string | null;
@@ -150,4 +178,116 @@ export interface IPublishJobRepository {
 
 export interface IAnalyticsRepository {
   getLatestWeeklyEvaluation(): Promise<WeeklyEvaluationReport>;
+}
+
+export interface UpsertAffiliateLinkInput {
+  productId: string;
+  lnkBioId: string | null;
+  biolinkNumber: string;
+  redirectCode: string;
+  title: string;
+  targetUrl: string;
+  trackedUrl: string;
+  imageUrl?: string | null;
+  groupId?: string | null;
+  groupName?: string | null;
+  position: number;
+  scheduleFrom?: string | null;
+  scheduleTo?: string | null;
+  syncStatus: LnkBioSyncStatus;
+  isActive: boolean;
+  lnkBioClicks?: number;
+  lastSyncedAt?: string | null;
+}
+
+export interface CreateLnkBioSyncLogInput {
+  productId: string | null;
+  affiliateLinkId: string | null;
+  operation: LnkBioSyncOperation;
+  status: 'SUCCESS' | 'FAILED';
+  httpStatus: number | null;
+  requestPayload: Record<string, unknown> | null;
+  responsePayload: Record<string, unknown> | null;
+  errorMessage: string | null;
+  attemptCount: number;
+  durationMs: number | null;
+}
+
+export interface CreateLnkBioMetricsSnapshotInput {
+  productId: string;
+  affiliateLinkId: string | null;
+  lnkBioId: string | null;
+  snapshotDate: string;
+  lnkBioClicks: number;
+  internalRedirectClicks: number;
+  totalTrackedClicks: number;
+  ctrPct: number;
+  estimatedCommissionIdr: number;
+  performanceScore: number;
+  utmBreakdown: Record<string, number> | null;
+}
+
+export interface ILnkBioRepository {
+  listAffiliateLinks(): Promise<AffiliateLink[]>;
+  getAffiliateLinkByProductId(productId: string): Promise<AffiliateLink | null>;
+  getAffiliateLinkByRedirectCode(code: string): Promise<AffiliateLink | null>;
+  upsertAffiliateLink(input: UpsertAffiliateLinkInput): Promise<AffiliateLink>;
+  incrementInternalClicks(id: string): Promise<AffiliateLink>;
+  updateAffiliateLinkClicks(
+    id: string,
+    patch: { lnkBioClicks?: number; position?: number; lastSyncedAt?: string }
+  ): Promise<AffiliateLink>;
+  markAffiliateLinkDeleted(productId: string): Promise<AffiliateLink | null>;
+  listSyncLogs(filter?: {
+    limit?: number;
+    operation?: LnkBioSyncOperation;
+    status?: 'SUCCESS' | 'FAILED';
+  }): Promise<LnkBioSyncLog[]>;
+  createSyncLog(input: CreateLnkBioSyncLogInput): Promise<LnkBioSyncLog>;
+  listMetricsSnapshots(filter?: {
+    productId?: string;
+    limit?: number;
+  }): Promise<LnkBioMetricsSnapshot[]>;
+  createMetricsSnapshot(
+    input: CreateLnkBioMetricsSnapshotInput
+  ): Promise<LnkBioMetricsSnapshot>;
+}
+
+export interface CreateThreadsPostInput {
+  productId: string;
+  rootPostId: string | null;
+  replyPostId: string | null;
+  permalink: string | null;
+  username: string;
+  mediaType: ThreadsMediaType;
+  rootText: string;
+  replyText: string;
+  mediaUrl: string | null;
+  affiliateUrl: string;
+  status: ThreadsPostStatus;
+  errorMessage: string | null;
+  publishedAt: string | null;
+}
+
+export interface CreateThreadsSyncLogInput {
+  productId: string | null;
+  threadsPostId: string | null;
+  operation: ThreadsSyncOperation;
+  status: 'SUCCESS' | 'FAILED';
+  httpStatus: number | null;
+  requestPayload: Record<string, unknown> | null;
+  responsePayload: Record<string, unknown> | null;
+  errorMessage: string | null;
+  durationMs: number | null;
+}
+
+export interface IThreadsRepository {
+  listPosts(filter?: { productId?: string; limit?: number }): Promise<ThreadsPostRecord[]>;
+  createPost(input: CreateThreadsPostInput): Promise<ThreadsPostRecord>;
+  listSyncLogs(filter?: {
+    limit?: number;
+    operation?: ThreadsSyncOperation;
+    status?: 'SUCCESS' | 'FAILED';
+  }): Promise<ThreadsSyncLog[]>;
+  createSyncLog(input: CreateThreadsSyncLogInput): Promise<ThreadsSyncLog>;
 }

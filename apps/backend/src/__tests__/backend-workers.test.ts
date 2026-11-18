@@ -7,12 +7,14 @@ describe('Backend BullMQ Workers & Cron Registration', () => {
     const addOAuth = vi.fn().mockResolvedValue(undefined);
     const addWeekly = vi.fn().mockResolvedValue(undefined);
     const addScript = vi.fn().mockResolvedValue(undefined);
+    const addLnkBioSync = vi.fn().mockResolvedValue(undefined);
 
     const fakeRegistry = {
       queues: {
         OAUTH_TOKEN_REFRESH: { add: addOAuth },
         WEEKLY_EVALUATION: { add: addWeekly },
         SCRIPT_GENERATION: { add: addScript },
+        LNKBIO_METRICS_SYNC: { add: addLnkBioSync },
       },
     } as unknown as QueueRegistry;
 
@@ -29,5 +31,10 @@ describe('Backend BullMQ Workers & Cron Registration', () => {
       expect.objectContaining({ repeat: { pattern: '0 13 * * 0' } })
     );
     expect(addScript).toHaveBeenCalledTimes(3);
+    expect(addLnkBioSync).toHaveBeenCalledWith(
+      'periodic-lnkbio-metrics-sync',
+      {},
+      expect.objectContaining({ repeat: { pattern: '0 */6 * * *' } })
+    );
   });
 });

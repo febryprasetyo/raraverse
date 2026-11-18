@@ -42,7 +42,7 @@ export default function StudioPage() {
           Content Studio 9:16
         </h1>
         <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-          Generate script AI, tinjau transkrip voiceover, dan verifikasi posisi subtitle pada safe-zone 9:16.
+          Buat naskah 6 scene & prompt Gemini Web, upload hasil video/storyboard, lalu verifikasi safe-zone 9:16.
         </p>
       </header>
       <AuthGuard>
@@ -52,6 +52,18 @@ export default function StudioPage() {
           loading={loading}
           errorMsg={errorMsg}
           onRetry={() => void loadStudio()}
+          onGenerateStoryboard={async (input) => {
+            if (!client) return undefined;
+            const created = await client.generateStoryboard(input);
+            await loadStudio();
+            return created;
+          }}
+          onUploadRenderedVideo={async (assetId, dataUrl) => {
+            if (!client) return undefined;
+            const updated = await client.uploadRenderedVideo(assetId, dataUrl);
+            await loadStudio();
+            return updated;
+          }}
           onGenerate={async (input) => {
             if (!client) return;
             await client.generateContent(input);

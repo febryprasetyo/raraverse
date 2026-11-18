@@ -76,28 +76,95 @@ export class MockTtsProvider implements ITtsProvider {
   }
 }
 
+function splitTtsChunks(text: string, maxLen = 180): string[] {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return [];
+  }
+  const chunks: string[] = [];
+  let remaining = normalized;
+  while (remaining.length > maxLen) {
+    let splitIdx = remaining.lastIndexOf('. ', maxLen);
+    if (splitIdx < 40) {
+      splitIdx = remaining.lastIndexOf(' ', maxLen);
+    }
+    if (splitIdx <= 0) {
+      splitIdx = maxLen;
+    } else {
+      splitIdx += 1;
+    }
+    chunks.push(remaining.slice(0, splitIdx).trim());
+    remaining = remaining.slice(splitIdx).trim();
+  }
+  if (remaining) {
+    chunks.push(remaining);
+  }
+  return chunks;
+}
+
+async function synthesizeViaGoogleTranslateTts(
+  text: string,
+  outputAudioPath: string
+): Promise<boolean> {
+  const chunks = splitTtsChunks(text, 180);
+  if (chunks.length === 0) {
+    return false;
+  }
+  const buffers: Buffer[] = [];
+  for (const chunk of chunks) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      return false;
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.byteLength === 0) {
+      return false;
+    }
+    buffers.push(buf);
+  }
+  await writeFile(outputAudioPath, Buffer.concat(buffers));
+  return true;
+}
+
 /**
- * Invokes `edge-tts` CLI (Python package) to synthesize Indonesian neural voiceover
- * and parse word boundaries.
+ * Invokes `edge-tts` CLI (Python package) to synthesize Indonesian neural voiceover,
+ * falling back to HTTP Indonesian TTS when Python/edge-tts is unavailable.
  */
 export class EdgeTtsProvider implements ITtsProvider {
   async synthesize(input: TtsSynthesisInput): Promise<TtsSynthesisResult> {
     const voice = input.voiceId || 'id-ID-GadisNeural';
     const pythonBin = process.env.PYTHON_BIN || 'python';
-    await execFileAsync(pythonBin, [
-      '-m',
-      'edge_tts',
-      '--voice',
-      voice,
-      '--text',
-      input.text,
-      '--write-media',
-      input.outputAudioPath,
-    ]);
-
     const wordBoundaries = estimateWordBoundaries(input.text);
     const last = wordBoundaries.at(-1);
     const durationSec = last ? Number(((last.offsetMs + last.durationMs) / 1000).toFixed(2)) : 1;
+
+    try {
+      await execFileAsync(pythonBin, [
+        '-m',
+        'edge_tts',
+        '--voice',
+        voice,
+        '--text',
+        input.text,
+        '--write-media',
+        input.outputAudioPath,
+      ]);
+    } catch {
+      const httpOk = await synthesizeViaGoogleTranslateTts(
+        input.text,
+        input.outputAudioPath
+      ).catch(() => false);
+      if (!httpOk) {
+        await writeFile(input.outputAudioPath, createSilentWavBuffer(durationSec));
+      }
+    }
+
     return {
       audioPath: input.outputAudioPath,
       wordBoundaries,

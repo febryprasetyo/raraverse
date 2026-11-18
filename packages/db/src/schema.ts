@@ -37,6 +37,7 @@ export const platformEnum = pgEnum('target_platform', [
   'YT_SHORTS',
   'SHOPEE_VIDEO',
   'TIKTOK_STUDIO',
+  'THREADS',
 ]);
 
 export const executionModeEnum = pgEnum('execution_mode', [
@@ -84,13 +85,55 @@ export const products = pgTable(
         tiktokProductId?: string;
         tiktokShortlink?: string;
         biolinkAnchorUrl?: string;
+        lnkBioId?: string;
+        lnkBioGroupId?: string;
+        lnkBioScheduleFrom?: string;
+        lnkBioScheduleTo?: string;
+        lnkBioPosition?: number;
+        threadsPostId?: string;
+        threadsReplyId?: string;
+        threadsPermalink?: string;
       }>()
       .notNull(),
     kalodataSnapshot: jsonb('kalodata_snapshot').$type<{
+      imageUrl?: string;
       weeklyRevenueIdr?: number;
       weeklyUnitsSold?: number;
       referenceVideoUrls?: string[];
       syncedAt?: string;
+      unitPriceExactIdr?: number;
+      revenueExactIdr?: number;
+      revenueGrowthRatePct?: number;
+      liveRevenueIdr?: number;
+      videoRevenueIdr?: number;
+      showcaseRevenueIdr?: number;
+      launchDate?: string;
+      sellerId?: string;
+      sellerName?: string;
+      skuCount?: string;
+      priCategory?: { categoryId: string; categoryName: string };
+      secCategory?: { categoryId: string; categoryName: string };
+      terCategory?: { categoryId: string; categoryName: string };
+      referenceVideos?: Array<{
+        videoId: string;
+        videoTitle?: string;
+        belongedCreatorId?: string;
+        belongedCreatorHandle?: string;
+        videoUrl?: string;
+        revenue?: number;
+        views?: number;
+        revenueGrowthRate?: number;
+        adsRoas?: number;
+        diggCount?: number;
+        shareCount?: number;
+        commentCount?: number;
+        adRevenueRatio?: number;
+        adViewRatio?: number;
+        creatorDebut?: string;
+        ad?: number;
+        aiVideo?: number;
+        publishDate?: string;
+      }>;
     }>(),
     rawMediaDir: varchar('raw_media_dir', { length: 512 }).notNull(),
     rawMediaClipCount: integer('raw_media_clip_count').default(0).notNull(),
@@ -130,7 +173,16 @@ export const contentAssets = pgTable(
         captionSeo: string;
         hashtags: string[];
         pinnedComment: string;
-        sceneCues: Array<{ order: number; visualFocus: string; durationSec: number }>;
+        sceneCues: Array<{
+          order: number;
+          visualFocus: string;
+          doodleText?: string;
+          durationSec: number;
+        }>;
+        storyboardPrompt?: string;
+        storyboardImageUrl?: string;
+        productImageUrl?: string;
+        backgroundImageUrl?: string;
       }>()
       .notNull(),
     audioR2Key: varchar('audio_r2_key', { length: 512 }),
@@ -274,5 +326,166 @@ export const productMetricsWeekly = pgTable(
       table.productId,
       table.weekStartDate
     ),
+  })
+);
+
+// --- 7. TABEL AFFILIATE_LINKS (Lnk.Bio Master & Hybrid Redirect Mapping) ---
+export const affiliateLinks = pgTable(
+  'affiliate_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    lnkBioId: varchar('lnk_bio_id', { length: 128 }),
+    biolinkNumber: varchar('biolink_number', { length: 16 }).notNull(),
+    redirectCode: varchar('redirect_code', { length: 32 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    targetUrl: text('target_url').notNull(),
+    trackedUrl: text('tracked_url').notNull(),
+    imageUrl: text('image_url'),
+    groupId: varchar('group_id', { length: 128 }),
+    groupName: varchar('group_name', { length: 128 }),
+    position: integer('position').default(0).notNull(),
+    scheduleFrom: timestamp('schedule_from', { withTimezone: true }),
+    scheduleTo: timestamp('schedule_to', { withTimezone: true }),
+    syncStatus: varchar('sync_status', { length: 32 }).default('PENDING').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    internalClicks: integer('internal_clicks').default(0).notNull(),
+    lnkBioClicks: integer('lnk_bio_clicks').default(0).notNull(),
+    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    productUq: uniqueIndex('affiliate_links_product_uq').on(table.productId),
+    redirectCodeUq: uniqueIndex('affiliate_links_redirect_code_uq').on(
+      table.redirectCode
+    ),
+    lnkBioIdIdx: index('affiliate_links_lnkbio_id_idx').on(table.lnkBioId),
+  })
+);
+
+// --- 8. TABEL LNK_BIO_SYNC_LOGS ---
+export const lnkBioSyncLogs = pgTable(
+  'lnk_bio_sync_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    productId: uuid('product_id').references(() => products.id, {
+      onDelete: 'set null',
+    }),
+    affiliateLinkId: uuid('affiliate_link_id').references(() => affiliateLinks.id, {
+      onDelete: 'set null',
+    }),
+    operation: varchar('operation', { length: 32 }).notNull(),
+    status: varchar('status', { length: 16 }).notNull(),
+    httpStatus: integer('http_status'),
+    requestPayload: jsonb('request_payload').$type<Record<string, unknown> | null>(),
+    responsePayload: jsonb('response_payload').$type<Record<string, unknown> | null>(),
+    errorMessage: text('error_message'),
+    attemptCount: integer('attempt_count').default(1).notNull(),
+    durationMs: integer('duration_ms'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    operationCreatedIdx: index('lnk_bio_sync_logs_op_created_idx').on(
+      table.operation,
+      table.createdAt
+    ),
+    productIdx: index('lnk_bio_sync_logs_product_idx').on(table.productId),
+  })
+);
+
+// --- 9. TABEL LNK_BIO_METRICS_SNAPSHOTS ---
+export const lnkBioMetricsSnapshots = pgTable(
+  'lnk_bio_metrics_snapshots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    affiliateLinkId: uuid('affiliate_link_id').references(() => affiliateLinks.id, {
+      onDelete: 'set null',
+    }),
+    lnkBioId: varchar('lnk_bio_id', { length: 128 }),
+    snapshotDate: timestamp('snapshot_date', { withTimezone: true }).notNull(),
+    lnkBioClicks: integer('lnk_bio_clicks').default(0).notNull(),
+    internalRedirectClicks: integer('internal_redirect_clicks').default(0).notNull(),
+    totalTrackedClicks: integer('total_tracked_clicks').default(0).notNull(),
+    ctrPct: numeric('ctr_pct', { precision: 6, scale: 2 }).default('0.00').notNull(),
+    estimatedCommissionIdr: integer('estimated_commission_idr').default(0).notNull(),
+    performanceScore: numeric('performance_score', { precision: 10, scale: 2 })
+      .default('0.00')
+      .notNull(),
+    utmBreakdown: jsonb('utm_breakdown').$type<Record<string, number> | null>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    productSnapshotIdx: index('lnk_bio_metrics_snapshots_prod_date_idx').on(
+      table.productId,
+      table.snapshotDate
+    ),
+  })
+);
+
+// --- 10. TABEL THREADS_POSTS (Chained Thread Affiliate History) ---
+export const threadsPosts = pgTable(
+  'threads_posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    rootPostId: varchar('root_post_id', { length: 128 }),
+    replyPostId: varchar('reply_post_id', { length: 128 }),
+    permalink: text('permalink'),
+    username: varchar('username', { length: 128 }).notNull(),
+    mediaType: varchar('media_type', { length: 16 }).default('TEXT').notNull(),
+    rootText: text('root_text').notNull(),
+    replyText: text('reply_text').notNull(),
+    mediaUrl: text('media_url'),
+    affiliateUrl: text('affiliate_url').notNull(),
+    status: varchar('status', { length: 32 }).default('PUBLISHED').notNull(),
+    viewsCount: integer('views_count').default(0).notNull(),
+    likesCount: integer('likes_count').default(0).notNull(),
+    repliesCount: integer('replies_count').default(0).notNull(),
+    errorMessage: text('error_message'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    productIdx: index('threads_posts_product_idx').on(table.productId),
+    rootPostIdx: index('threads_posts_root_post_idx').on(table.rootPostId),
+    statusIdx: index('threads_posts_status_idx').on(table.status),
+  })
+);
+
+// --- 11. TABEL THREADS_SYNC_LOGS ---
+export const threadsSyncLogs = pgTable(
+  'threads_sync_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    productId: uuid('product_id').references(() => products.id, {
+      onDelete: 'set null',
+    }),
+    threadsPostId: uuid('threads_post_id').references(() => threadsPosts.id, {
+      onDelete: 'set null',
+    }),
+    operation: varchar('operation', { length: 32 }).notNull(),
+    status: varchar('status', { length: 16 }).notNull(),
+    httpStatus: integer('http_status'),
+    requestPayload: jsonb('request_payload').$type<Record<string, unknown> | null>(),
+    responsePayload: jsonb('response_payload').$type<Record<string, unknown> | null>(),
+    errorMessage: text('error_message'),
+    durationMs: integer('duration_ms'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    operationCreatedIdx: index('threads_sync_logs_op_created_idx').on(
+      table.operation,
+      table.createdAt
+    ),
+    productIdx: index('threads_sync_logs_product_idx').on(table.productId),
   })
 );

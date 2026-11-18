@@ -147,7 +147,7 @@ export function PerformanceChart({
                 x2={width - padRight}
                 y2={y}
                 stroke="currentColor"
-                className="text-slate-200/80 dark:text-slate-800"
+                className="text-slate-800"
                 strokeDasharray="4 4"
               />
             );

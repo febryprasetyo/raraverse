@@ -9,6 +9,7 @@ export const QUEUE_NAMES = {
   META_AUTO_DM: 'meta-auto-dm',
   OAUTH_TOKEN_REFRESH: 'oauth-token-refresh',
   WEEKLY_EVALUATION: 'weekly-evaluation',
+  LNKBIO_METRICS_SYNC: 'lnkbio-metrics-sync',
 } as const;
 
 export interface QueueRegistry {
@@ -32,6 +33,7 @@ export function createQueueRegistry(redisUrl: string): QueueRegistry {
     META_AUTO_DM: new Queue(QUEUE_NAMES.META_AUTO_DM, { connection }),
     OAUTH_TOKEN_REFRESH: new Queue(QUEUE_NAMES.OAUTH_TOKEN_REFRESH, { connection }),
     WEEKLY_EVALUATION: new Queue(QUEUE_NAMES.WEEKLY_EVALUATION, { connection }),
+    LNKBIO_METRICS_SYNC: new Queue(QUEUE_NAMES.LNKBIO_METRICS_SYNC, { connection }),
   };
 
   return {

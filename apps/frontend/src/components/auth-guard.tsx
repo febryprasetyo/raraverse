@@ -29,7 +29,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
         </p>
         <Link
           href="/login"
-          className="mt-5 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          className="mt-5 inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
         >
           Buka Halaman Login
         </Link>

@@ -7,6 +7,7 @@ import {
   FbReelsPublisher,
   IgReelsPublisher,
   OfficialApiPublishProcessor,
+  ThreadsPublisher,
   YtShortsPublisher,
   type IPlatformPublisher,
 } from '../adapters/official-publishers.js';
@@ -57,6 +58,17 @@ export async function registerBackendCronJobs(
       }
     );
   }
+
+  if (registry.queues.LNKBIO_METRICS_SYNC) {
+    await registry.queues.LNKBIO_METRICS_SYNC.add(
+      'periodic-lnkbio-metrics-sync',
+      {},
+      {
+        repeat: { pattern: '0 */6 * * *' },
+        jobId: 'cron:lnkbio-metrics-sync',
+      }
+    );
+  }
 }
 
 export function startBackendWorkers(
@@ -84,6 +96,12 @@ export function startBackendWorkers(
   if (process.env.YOUTUBE_ACCESS_TOKEN) {
     publishers.YT_SHORTS = new YtShortsPublisher({
       accessToken: process.env.YOUTUBE_ACCESS_TOKEN,
+      publicBaseUrl,
+    });
+  }
+  if (env.THREADS_MODE === 'real') {
+    publishers.THREADS = new ThreadsPublisher({
+      threadsClient: container.threadsClient,
       publicBaseUrl,
     });
   }
@@ -131,6 +149,8 @@ export function startBackendWorkers(
         metaAppSecret: env.META_APP_SECRET,
         youtubeClientId: process.env.YOUTUBE_CLIENT_ID,
         youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+        lnkBioClientId: env.LNKBIO_CLIENT_ID,
+        lnkBioClientSecret: env.LNKBIO_CLIENT_SECRET,
       });
       const summary = await service.refreshExpiringTokens(14);
       if (summary.reauthRequiredIds.length > 0) {
@@ -159,11 +179,18 @@ export function startBackendWorkers(
     { connection }
   );
 
+  const lnkBioSyncWorker = new Worker(
+    QUEUE_NAMES.LNKBIO_METRICS_SYNC,
+    async () => container.lnkBioAutomation.syncRemoteLinksAndMetrics(),
+    { connection }
+  );
+
   const workers = [
     metaDmWorker,
     officialPublishWorker,
     oauthRefreshWorker,
     weeklyEvalWorker,
+    lnkBioSyncWorker,
   ];
 
   for (const worker of workers) {

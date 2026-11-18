@@ -1,27 +1,46 @@
 import {
+  affiliateLinks,
   and,
+  asc,
   contentAssets,
   createDbClient,
   desc,
   dmLogs,
   eq,
+  lnkBioMetricsSnapshots,
+  lnkBioSyncLogs,
   lte,
   oauthTokens,
   productMetricsWeekly,
   products,
   publishJobs,
+  sql,
+  threadsPosts,
+  threadsSyncLogs,
 } from '@ebieshop/db';
 import type {
   IOAuthTokenRepository,
+  OAuthProviderName,
   OAuthTokenRecord,
+  UpsertOAuthTokenInput,
 } from '../services/oauth-refresh.js';
 import type {
+  AffiliateLink,
   ContentAsset,
   ContentStatus,
   DmLog,
+  LnkBioMetricsSnapshot,
+  LnkBioSyncLog,
+  LnkBioSyncOperation,
+  LnkBioSyncStatus,
   Product,
   ProductStatus,
   PublishJobRecord,
+  ThreadsMediaType,
+  ThreadsPostRecord,
+  ThreadsPostStatus,
+  ThreadsSyncLog,
+  ThreadsSyncOperation,
   WeeklyEvaluationReport,
   WeeklyRecommendation,
 } from '@ebieshop/shared';
@@ -30,16 +49,23 @@ import { assertValidProductTransition } from '../services/product-transitions.js
 import type {
   CreateContentAssetInput,
   CreateDmLogInput,
+  CreateLnkBioMetricsSnapshotInput,
+  CreateLnkBioSyncLogInput,
   CreateProductInput,
   CreatePublishJobInput,
+  CreateThreadsPostInput,
+  CreateThreadsSyncLogInput,
   IAnalyticsRepository,
   IContentAssetRepository,
   IDmLogRepository,
+  ILnkBioRepository,
   IProductRepository,
   IPublishJobRepository,
+  IThreadsRepository,
   UpdateContentAssetInput,
   UpdateProductInput,
   UpdatePublishJobInput,
+  UpsertAffiliateLinkInput,
 } from './contracts.js';
 
 type DbInstance = ReturnType<typeof createDbClient>['db'];
@@ -62,6 +88,7 @@ function mapProductRow(row: typeof products.$inferSelect): Product {
       ? {
           ...row.kalodataSnapshot,
           referenceVideoUrls: row.kalodataSnapshot.referenceVideoUrls ?? [],
+          referenceVideos: row.kalodataSnapshot.referenceVideos ?? [],
         }
       : null,
     rawMediaDir: row.rawMediaDir,
@@ -223,6 +250,9 @@ export class DrizzleProductRepository implements IProductRepository {
         ...(patch.affiliateUrls !== undefined
           ? { affiliateUrls: patch.affiliateUrls }
           : {}),
+        ...(patch.kalodataSnapshot !== undefined
+          ? { kalodataSnapshot: patch.kalodataSnapshot }
+          : {}),
         ...(patch.rawMediaDir !== undefined ? { rawMediaDir: patch.rawMediaDir } : {}),
         ...(patch.rawMediaClipCount !== undefined
           ? { rawMediaClipCount: patch.rawMediaClipCount }
@@ -233,6 +263,16 @@ export class DrizzleProductRepository implements IProductRepository {
       .where(eq(products.id, id))
       .returning();
     return mapProductRow(row!);
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    const deleted = await this.db
+      .delete(products)
+      .where(eq(products.id, id))
+      .returning({ id: products.id });
+    if (deleted.length === 0) {
+      throw new NotFoundError(`Product '${id}' not found`);
+    }
   }
 }
 
@@ -283,6 +323,7 @@ export class DrizzleContentAssetRepository implements IContentAssetRepository {
     const [row] = await this.db
       .update(contentAssets)
       .set({
+        ...(patch.scriptJson !== undefined ? { scriptJson: patch.scriptJson } : {}),
         ...(patch.audioR2Key !== undefined ? { audioR2Key: patch.audioR2Key } : {}),
         ...(patch.subtitleR2Key !== undefined
           ? { subtitleR2Key: patch.subtitleR2Key }
@@ -475,6 +516,28 @@ export class DrizzleAnalyticsRepository implements IAnalyticsRepository {
   }
 }
 
+function normalizeOAuthProvider(provider: string): OAuthProviderName {
+  if (provider === 'youtube' || provider === 'lnkbio' || provider === 'threads') {
+    return provider;
+  }
+  return 'meta';
+}
+
+function mapOAuthTokenRow(row: typeof oauthTokens.$inferSelect): OAuthTokenRecord {
+  return {
+    id: row.id,
+    provider: normalizeOAuthProvider(row.provider),
+    accountLabel: row.accountLabel,
+    externalAccountId: row.externalAccountId,
+    encryptedAccessToken: row.encryptedAccessToken,
+    encryptedRefreshToken: row.encryptedRefreshToken,
+    tokenIv: row.tokenIv,
+    tokenAuthTag: row.tokenAuthTag,
+    expiresAt: row.expiresAt,
+    needsReauth: row.needsReauth,
+  };
+}
+
 export class DrizzleOAuthTokenRepository implements IOAuthTokenRepository {
   constructor(private readonly db: DbInstance) {}
 
@@ -485,18 +548,53 @@ export class DrizzleOAuthTokenRepository implements IOAuthTokenRepository {
       .from(oauthTokens)
       .where(and(lte(oauthTokens.expiresAt, cutoff), eq(oauthTokens.needsReauth, false)));
 
-    return rows.map((row) => ({
-      id: row.id,
-      provider: row.provider === 'youtube' ? 'youtube' : 'meta',
-      accountLabel: row.accountLabel,
-      externalAccountId: row.externalAccountId,
-      encryptedAccessToken: row.encryptedAccessToken,
-      encryptedRefreshToken: row.encryptedRefreshToken,
-      tokenIv: row.tokenIv,
-      tokenAuthTag: row.tokenAuthTag,
-      expiresAt: row.expiresAt,
-      needsReauth: row.needsReauth,
-    }));
+    return rows.map(mapOAuthTokenRow);
+  }
+
+  async getTokenByProvider(provider: OAuthProviderName): Promise<OAuthTokenRecord | null> {
+    const [row] = await this.db
+      .select()
+      .from(oauthTokens)
+      .where(eq(oauthTokens.provider, provider))
+      .orderBy(desc(oauthTokens.updatedAt))
+      .limit(1);
+    return row ? mapOAuthTokenRow(row) : null;
+  }
+
+  async upsertToken(input: UpsertOAuthTokenInput): Promise<OAuthTokenRecord> {
+    const [row] = await this.db
+      .insert(oauthTokens)
+      .values({
+        provider: input.provider,
+        accountLabel: input.accountLabel,
+        externalAccountId: input.externalAccountId,
+        encryptedAccessToken: input.encryptedAccessToken,
+        encryptedRefreshToken: input.encryptedRefreshToken,
+        tokenIv: input.tokenIv,
+        tokenAuthTag: input.tokenAuthTag,
+        scopes: input.scopes,
+        expiresAt: input.expiresAt,
+        lastRefreshedAt: new Date(),
+        needsReauth: input.needsReauth,
+      })
+      .onConflictDoUpdate({
+        target: [oauthTokens.provider, oauthTokens.externalAccountId],
+        set: {
+          accountLabel: input.accountLabel,
+          encryptedAccessToken: input.encryptedAccessToken,
+          encryptedRefreshToken: input.encryptedRefreshToken,
+          tokenIv: input.tokenIv,
+          tokenAuthTag: input.tokenAuthTag,
+          scopes: input.scopes,
+          expiresAt: input.expiresAt,
+          lastRefreshedAt: new Date(),
+          needsReauth: input.needsReauth,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return mapOAuthTokenRow(row!);
   }
 
   async updateToken(
@@ -532,17 +630,400 @@ export class DrizzleOAuthTokenRepository implements IOAuthTokenRepository {
       throw new NotFoundError(`OAuth token '${id}' not found`);
     }
 
-    return {
-      id: row.id,
-      provider: row.provider === 'youtube' ? 'youtube' : 'meta',
-      accountLabel: row.accountLabel,
-      externalAccountId: row.externalAccountId,
-      encryptedAccessToken: row.encryptedAccessToken,
-      encryptedRefreshToken: row.encryptedRefreshToken,
-      tokenIv: row.tokenIv,
-      tokenAuthTag: row.tokenAuthTag,
-      expiresAt: row.expiresAt,
-      needsReauth: row.needsReauth,
-    };
+    return mapOAuthTokenRow(row);
+  }
+}
+
+function mapAffiliateLinkRow(row: typeof affiliateLinks.$inferSelect): AffiliateLink {
+  return {
+    id: row.id,
+    productId: row.productId,
+    lnkBioId: row.lnkBioId,
+    biolinkNumber: row.biolinkNumber,
+    redirectCode: row.redirectCode,
+    title: row.title,
+    targetUrl: row.targetUrl,
+    trackedUrl: row.trackedUrl,
+    imageUrl: row.imageUrl,
+    groupId: row.groupId,
+    groupName: row.groupName,
+    position: row.position,
+    scheduleFrom: row.scheduleFrom ? row.scheduleFrom.toISOString() : null,
+    scheduleTo: row.scheduleTo ? row.scheduleTo.toISOString() : null,
+    syncStatus: row.syncStatus as LnkBioSyncStatus,
+    isActive: row.isActive,
+    internalClicks: row.internalClicks,
+    lnkBioClicks: row.lnkBioClicks,
+    lastSyncedAt: row.lastSyncedAt ? row.lastSyncedAt.toISOString() : null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function mapSyncLogRow(row: typeof lnkBioSyncLogs.$inferSelect): LnkBioSyncLog {
+  return {
+    id: row.id,
+    productId: row.productId,
+    affiliateLinkId: row.affiliateLinkId,
+    operation: row.operation as LnkBioSyncOperation,
+    status: row.status as 'SUCCESS' | 'FAILED',
+    httpStatus: row.httpStatus,
+    requestPayload: row.requestPayload,
+    responsePayload: row.responsePayload,
+    errorMessage: row.errorMessage,
+    attemptCount: row.attemptCount,
+    durationMs: row.durationMs,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function mapSnapshotRow(
+  row: typeof lnkBioMetricsSnapshots.$inferSelect
+): LnkBioMetricsSnapshot {
+  return {
+    id: row.id,
+    productId: row.productId,
+    affiliateLinkId: row.affiliateLinkId,
+    lnkBioId: row.lnkBioId,
+    snapshotDate: row.snapshotDate.toISOString(),
+    lnkBioClicks: row.lnkBioClicks,
+    internalRedirectClicks: row.internalRedirectClicks,
+    totalTrackedClicks: row.totalTrackedClicks,
+    ctrPct: Number(row.ctrPct),
+    estimatedCommissionIdr: row.estimatedCommissionIdr,
+    performanceScore: Number(row.performanceScore),
+    utmBreakdown: row.utmBreakdown,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export class DrizzleLnkBioRepository implements ILnkBioRepository {
+  constructor(private readonly db: DbInstance) {}
+
+  async listAffiliateLinks(): Promise<AffiliateLink[]> {
+    const rows = await this.db
+      .select()
+      .from(affiliateLinks)
+      .orderBy(asc(affiliateLinks.position), asc(affiliateLinks.biolinkNumber));
+    return rows.map(mapAffiliateLinkRow);
+  }
+
+  async getAffiliateLinkByProductId(productId: string): Promise<AffiliateLink | null> {
+    const [row] = await this.db
+      .select()
+      .from(affiliateLinks)
+      .where(eq(affiliateLinks.productId, productId));
+    return row ? mapAffiliateLinkRow(row) : null;
+  }
+
+  async getAffiliateLinkByRedirectCode(code: string): Promise<AffiliateLink | null> {
+    const [row] = await this.db
+      .select()
+      .from(affiliateLinks)
+      .where(eq(affiliateLinks.redirectCode, code.trim().toUpperCase()));
+    return row ? mapAffiliateLinkRow(row) : null;
+  }
+
+  async upsertAffiliateLink(input: UpsertAffiliateLinkInput): Promise<AffiliateLink> {
+    const [row] = await this.db
+      .insert(affiliateLinks)
+      .values({
+        productId: input.productId,
+        lnkBioId: input.lnkBioId,
+        biolinkNumber: input.biolinkNumber,
+        redirectCode: input.redirectCode.toUpperCase(),
+        title: input.title,
+        targetUrl: input.targetUrl,
+        trackedUrl: input.trackedUrl,
+        imageUrl: input.imageUrl ?? null,
+        groupId: input.groupId ?? null,
+        groupName: input.groupName ?? null,
+        position: input.position,
+        scheduleFrom: input.scheduleFrom ? new Date(input.scheduleFrom) : null,
+        scheduleTo: input.scheduleTo ? new Date(input.scheduleTo) : null,
+        syncStatus: input.syncStatus,
+        isActive: input.isActive,
+        lnkBioClicks: input.lnkBioClicks ?? 0,
+        lastSyncedAt: input.lastSyncedAt ? new Date(input.lastSyncedAt) : null,
+      })
+      .onConflictDoUpdate({
+        target: affiliateLinks.productId,
+        set: {
+          lnkBioId: input.lnkBioId,
+          biolinkNumber: input.biolinkNumber,
+          redirectCode: input.redirectCode.toUpperCase(),
+          title: input.title,
+          targetUrl: input.targetUrl,
+          trackedUrl: input.trackedUrl,
+          imageUrl: input.imageUrl ?? null,
+          groupId: input.groupId ?? null,
+          groupName: input.groupName ?? null,
+          position: input.position,
+          scheduleFrom: input.scheduleFrom ? new Date(input.scheduleFrom) : null,
+          scheduleTo: input.scheduleTo ? new Date(input.scheduleTo) : null,
+          syncStatus: input.syncStatus,
+          isActive: input.isActive,
+          ...(input.lnkBioClicks !== undefined
+            ? { lnkBioClicks: input.lnkBioClicks }
+            : {}),
+          lastSyncedAt: input.lastSyncedAt ? new Date(input.lastSyncedAt) : null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return mapAffiliateLinkRow(row!);
+  }
+
+  async incrementInternalClicks(id: string): Promise<AffiliateLink> {
+    const [row] = await this.db
+      .update(affiliateLinks)
+      .set({
+        internalClicks: sql`${affiliateLinks.internalClicks} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(affiliateLinks.id, id))
+      .returning();
+
+    if (!row) {
+      throw new NotFoundError(`AffiliateLink '${id}' not found`);
+    }
+    return mapAffiliateLinkRow(row);
+  }
+
+  async updateAffiliateLinkClicks(
+    id: string,
+    patch: { lnkBioClicks?: number; position?: number; lastSyncedAt?: string }
+  ): Promise<AffiliateLink> {
+    const [row] = await this.db
+      .update(affiliateLinks)
+      .set({
+        ...(patch.lnkBioClicks !== undefined ? { lnkBioClicks: patch.lnkBioClicks } : {}),
+        ...(patch.position !== undefined ? { position: patch.position } : {}),
+        ...(patch.lastSyncedAt !== undefined
+          ? { lastSyncedAt: new Date(patch.lastSyncedAt) }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(affiliateLinks.id, id))
+      .returning();
+
+    if (!row) {
+      throw new NotFoundError(`AffiliateLink '${id}' not found`);
+    }
+    return mapAffiliateLinkRow(row);
+  }
+
+  async markAffiliateLinkDeleted(productId: string): Promise<AffiliateLink | null> {
+    const [row] = await this.db
+      .update(affiliateLinks)
+      .set({
+        isActive: false,
+        syncStatus: 'DELETED',
+        lnkBioId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(affiliateLinks.productId, productId))
+      .returning();
+    return row ? mapAffiliateLinkRow(row) : null;
+  }
+
+  async listSyncLogs(filter?: {
+    limit?: number;
+    operation?: LnkBioSyncOperation;
+    status?: 'SUCCESS' | 'FAILED';
+  }): Promise<LnkBioSyncLog[]> {
+    const conditions = [];
+    if (filter?.operation) {
+      conditions.push(eq(lnkBioSyncLogs.operation, filter.operation));
+    }
+    if (filter?.status) {
+      conditions.push(eq(lnkBioSyncLogs.status, filter.status));
+    }
+
+    const baseQuery = this.db.select().from(lnkBioSyncLogs);
+    const filteredQuery =
+      conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+    const rows = await filteredQuery
+      .orderBy(desc(lnkBioSyncLogs.createdAt))
+      .limit(filter?.limit ?? 50);
+
+    return rows.map(mapSyncLogRow);
+  }
+
+  async createSyncLog(input: CreateLnkBioSyncLogInput): Promise<LnkBioSyncLog> {
+    const [row] = await this.db
+      .insert(lnkBioSyncLogs)
+      .values({
+        productId: input.productId,
+        affiliateLinkId: input.affiliateLinkId,
+        operation: input.operation,
+        status: input.status,
+        httpStatus: input.httpStatus,
+        requestPayload: input.requestPayload,
+        responsePayload: input.responsePayload,
+        errorMessage: input.errorMessage,
+        attemptCount: input.attemptCount,
+        durationMs: input.durationMs,
+      })
+      .returning();
+    return mapSyncLogRow(row!);
+  }
+
+  async listMetricsSnapshots(filter?: {
+    productId?: string;
+    limit?: number;
+  }): Promise<LnkBioMetricsSnapshot[]> {
+    const baseQuery = this.db.select().from(lnkBioMetricsSnapshots);
+    const filteredQuery = filter?.productId
+      ? baseQuery.where(eq(lnkBioMetricsSnapshots.productId, filter.productId))
+      : baseQuery;
+    const rows = await filteredQuery
+      .orderBy(desc(lnkBioMetricsSnapshots.snapshotDate))
+      .limit(filter?.limit ?? 100);
+    return rows.map(mapSnapshotRow);
+  }
+
+  async createMetricsSnapshot(
+    input: CreateLnkBioMetricsSnapshotInput
+  ): Promise<LnkBioMetricsSnapshot> {
+    const [row] = await this.db
+      .insert(lnkBioMetricsSnapshots)
+      .values({
+        productId: input.productId,
+        affiliateLinkId: input.affiliateLinkId,
+        lnkBioId: input.lnkBioId,
+        snapshotDate: new Date(input.snapshotDate),
+        lnkBioClicks: input.lnkBioClicks,
+        internalRedirectClicks: input.internalRedirectClicks,
+        totalTrackedClicks: input.totalTrackedClicks,
+        ctrPct: input.ctrPct.toFixed(2),
+        estimatedCommissionIdr: input.estimatedCommissionIdr,
+        performanceScore: input.performanceScore.toFixed(2),
+        utmBreakdown: input.utmBreakdown,
+      })
+      .returning();
+    return mapSnapshotRow(row!);
+  }
+}
+
+function mapThreadsPostRow(row: typeof threadsPosts.$inferSelect): ThreadsPostRecord {
+  return {
+    id: row.id,
+    productId: row.productId,
+    rootPostId: row.rootPostId,
+    replyPostId: row.replyPostId,
+    permalink: row.permalink,
+    username: row.username,
+    mediaType: row.mediaType as ThreadsMediaType,
+    rootText: row.rootText,
+    replyText: row.replyText,
+    mediaUrl: row.mediaUrl,
+    affiliateUrl: row.affiliateUrl,
+    status: row.status as ThreadsPostStatus,
+    viewsCount: row.viewsCount,
+    likesCount: row.likesCount,
+    repliesCount: row.repliesCount,
+    errorMessage: row.errorMessage,
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function mapThreadsSyncLogRow(
+  row: typeof threadsSyncLogs.$inferSelect
+): ThreadsSyncLog {
+  return {
+    id: row.id,
+    productId: row.productId,
+    threadsPostId: row.threadsPostId,
+    operation: row.operation as ThreadsSyncOperation,
+    status: row.status as 'SUCCESS' | 'FAILED',
+    httpStatus: row.httpStatus,
+    requestPayload: row.requestPayload,
+    responsePayload: row.responsePayload,
+    errorMessage: row.errorMessage,
+    durationMs: row.durationMs,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+export class DrizzleThreadsRepository implements IThreadsRepository {
+  constructor(private readonly db: DbInstance) {}
+
+  async listPosts(filter?: {
+    productId?: string;
+    limit?: number;
+  }): Promise<ThreadsPostRecord[]> {
+    const baseQuery = this.db.select().from(threadsPosts);
+    const filteredQuery = filter?.productId
+      ? baseQuery.where(eq(threadsPosts.productId, filter.productId))
+      : baseQuery;
+    const rows = await filteredQuery
+      .orderBy(desc(threadsPosts.createdAt))
+      .limit(filter?.limit ?? 50);
+    return rows.map(mapThreadsPostRow);
+  }
+
+  async createPost(input: CreateThreadsPostInput): Promise<ThreadsPostRecord> {
+    const [row] = await this.db
+      .insert(threadsPosts)
+      .values({
+        productId: input.productId,
+        rootPostId: input.rootPostId,
+        replyPostId: input.replyPostId,
+        permalink: input.permalink,
+        username: input.username,
+        mediaType: input.mediaType,
+        rootText: input.rootText,
+        replyText: input.replyText,
+        mediaUrl: input.mediaUrl,
+        affiliateUrl: input.affiliateUrl,
+        status: input.status,
+        errorMessage: input.errorMessage,
+        publishedAt: input.publishedAt ? new Date(input.publishedAt) : null,
+      })
+      .returning();
+    return mapThreadsPostRow(row!);
+  }
+
+  async listSyncLogs(filter?: {
+    limit?: number;
+    operation?: ThreadsSyncOperation;
+    status?: 'SUCCESS' | 'FAILED';
+  }): Promise<ThreadsSyncLog[]> {
+    const conditions = [];
+    if (filter?.operation) {
+      conditions.push(eq(threadsSyncLogs.operation, filter.operation));
+    }
+    if (filter?.status) {
+      conditions.push(eq(threadsSyncLogs.status, filter.status));
+    }
+    const baseQuery = this.db.select().from(threadsSyncLogs);
+    const filteredQuery =
+      conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+    const rows = await filteredQuery
+      .orderBy(desc(threadsSyncLogs.createdAt))
+      .limit(filter?.limit ?? 50);
+    return rows.map(mapThreadsSyncLogRow);
+  }
+
+  async createSyncLog(input: CreateThreadsSyncLogInput): Promise<ThreadsSyncLog> {
+    const [row] = await this.db
+      .insert(threadsSyncLogs)
+      .values({
+        productId: input.productId,
+        threadsPostId: input.threadsPostId,
+        operation: input.operation,
+        status: input.status,
+        httpStatus: input.httpStatus,
+        requestPayload: input.requestPayload,
+        responsePayload: input.responsePayload,
+        errorMessage: input.errorMessage,
+        durationMs: input.durationMs,
+      })
+      .returning();
+    return mapThreadsSyncLogRow(row!);
   }
 }

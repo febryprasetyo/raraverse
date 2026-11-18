@@ -3,23 +3,33 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import {
+  AffiliateLinkSchema,
   ContentAssetSchema,
   DataSourceModeSchema,
   DmLogSchema,
   KalodataCandidateSchema,
+  LnkBioMetricsSnapshotSchema,
+  LnkBioSyncLogSchema,
   MetaWebhookPayloadSchema,
   ProductSchema,
   PublishJobRecordSchema,
   ScriptGeneratorOutputSchema,
+  ThreadsPostRecordSchema,
+  ThreadsSyncLogSchema,
   WeeklyEvaluationReportSchema,
+  type AffiliateLink,
   type ContentAsset,
   type DataSourceMode,
   type DmLog,
   type KalodataCandidate,
+  type LnkBioMetricsSnapshot,
+  type LnkBioSyncLog,
   type MetaWebhookPayload,
   type Product,
   type PublishJobRecord,
   type ScriptGeneratorOutput,
+  type ThreadsPostRecord,
+  type ThreadsSyncLog,
   type WeeklyEvaluationReport,
 } from '@ebieshop/shared';
 
@@ -74,6 +84,41 @@ export function loadMockWeeklyEvaluation(): WeeklyEvaluationReport {
   return loadAndValidateJson(
     'weekly-evaluation.json',
     WeeklyEvaluationReportSchema
+  );
+}
+
+export function loadMockAffiliateLinks(): AffiliateLink[] {
+  return loadAndValidateJson(
+    'affiliate-links.json',
+    z.array(AffiliateLinkSchema)
+  );
+}
+
+export function loadMockLnkBioSyncLogs(): LnkBioSyncLog[] {
+  return loadAndValidateJson(
+    'lnk-bio-sync-logs.json',
+    z.array(LnkBioSyncLogSchema)
+  );
+}
+
+export function loadMockLnkBioMetricsSnapshots(): LnkBioMetricsSnapshot[] {
+  return loadAndValidateJson(
+    'lnk-bio-metrics-snapshots.json',
+    z.array(LnkBioMetricsSnapshotSchema)
+  );
+}
+
+export function loadMockThreadsPosts(): ThreadsPostRecord[] {
+  return loadAndValidateJson(
+    'threads-posts.json',
+    z.array(ThreadsPostRecordSchema)
+  );
+}
+
+export function loadMockThreadsSyncLogs(): ThreadsSyncLog[] {
+  return loadAndValidateJson(
+    'threads-sync-logs.json',
+    z.array(ThreadsSyncLogSchema)
   );
 }
 

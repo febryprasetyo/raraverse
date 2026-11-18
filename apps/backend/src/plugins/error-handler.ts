@@ -1,5 +1,6 @@
 import type { FastifyError, FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
+import { AppError } from '../errors.js';
 
 /**
  * Registers a centralized error handler that strips internal stack traces
@@ -27,7 +28,9 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     const code = statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : 'REQUEST_ERROR';
     const message =
-      statusCode >= 500 ? 'An unexpected internal error occurred' : error.message;
+      statusCode >= 500 && !(error instanceof AppError)
+        ? 'An unexpected internal error occurred'
+        : error.message;
 
     if (statusCode >= 500) {
       app.log.error(error);

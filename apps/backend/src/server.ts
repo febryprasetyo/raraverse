@@ -1,7 +1,8 @@
-import { loadEnvConfig } from './config/env.js';
+import { loadEnvConfig, loadLocalDevEnvInto } from './config/env.js';
 import { buildApp } from './app.js';
 
 async function main() {
+  loadLocalDevEnvInto(process.env);
   const env = loadEnvConfig(process.env);
   const app = await buildApp({
     env,

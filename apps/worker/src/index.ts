@@ -42,11 +42,28 @@ export async function startWorkerRuntime() {
     'local-video-render',
     async (job) => {
       const parsed = LocalVideoRenderJobSchema.parse(job.data);
-      const result = await processLocalVideoRender(parsed, {
-        ttsProvider: selectTtsProvider(parsed.ttsProvider),
-        vpsApiUrl: env.VPS_API_URL,
-        workerSecret: env.WORKER_SHARED_SECRET,
-      });
+      let result: Awaited<ReturnType<typeof processLocalVideoRender>>;
+      try {
+        result = await processLocalVideoRender(parsed, {
+          ttsProvider: selectTtsProvider(parsed.ttsProvider),
+          vpsApiUrl: env.VPS_API_URL,
+          workerSecret: env.WORKER_SHARED_SECRET,
+        });
+      } catch (err) {
+        const reason = err instanceof Error ? err.message.slice(0, 500) : 'Render failed';
+        await fetch(
+          `${env.VPS_API_URL.replace(/\/$/, '')}/api/v1/content/${parsed.contentAssetId}/render-failed`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${env.WORKER_SHARED_SECRET}`,
+            },
+            body: JSON.stringify({ reason }),
+          }
+        ).catch(() => {});
+        throw err;
+      }
 
       const completeRes = await fetch(
         `${env.VPS_API_URL.replace(/\/$/, '')}/api/v1/content/${parsed.contentAssetId}/render-complete`,

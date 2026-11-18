@@ -29,12 +29,12 @@ export function StatePanel({ status, title, description, onRetry }: StatePanelPr
     return (
       <div
         role="alert"
-        className="flex flex-col items-center justify-center gap-3 rounded-xl border border-rose-200 bg-rose-50/70 px-6 py-10 text-center dark:border-rose-900/60 dark:bg-rose-950/30"
+        className="flex flex-col items-center justify-center gap-3 rounded-xl border border-rose-500/40 bg-rose-950/35 px-6 py-10 text-center"
       >
-        <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" aria-hidden="true" />
-        <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{title}</p>
+        <AlertCircle className="h-5 w-5 text-rose-400" aria-hidden="true" />
+        <p className="text-sm font-semibold text-rose-200">{title}</p>
         {description ? (
-          <p className="text-xs text-rose-700 dark:text-rose-300">{description}</p>
+          <p className="text-xs text-rose-300">{description}</p>
         ) : null}
         <div className="flex flex-wrap items-center justify-center gap-2">
           {onRetry ? (
@@ -52,7 +52,7 @@ export function StatePanel({ status, title, description, onRetry }: StatePanelPr
                   // Ignore storage errors
                 }
               }}
-              className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
             >
               Masuk Ulang (Reset Token)
             </a>

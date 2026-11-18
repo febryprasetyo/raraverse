@@ -55,4 +55,124 @@ describe('@ebieshop/frontend api-client', () => {
 
     await expect(client.listProducts()).rejects.toThrow(/401/);
   });
+
+  it('validates Lnk.Bio overview and system health with lnkbio provider', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            profile: {
+              accountId: 'acc_1',
+              username: 'ebieshop.id',
+              planTier: 'MINI',
+              supportsGroups: true,
+              connected: true,
+              tokenStatus: 'HEALTHY',
+              expiresAt: null,
+            },
+            groups: [{ groupId: 'grp_1', groupName: 'Skincare', linkCount: 1 }],
+            links: [],
+            recommendedOrder: [],
+            readyToDeleteCount: 0,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            apiStatus: 'OK',
+            dataSourceMode: 'mock',
+            workerOnline: true,
+            lastHeartbeatAt: '2026-11-18T10:00:00.000Z',
+            oauthProviders: [
+              { provider: 'meta', status: 'HEALTHY', expiresInDays: 45 },
+              { provider: 'youtube', status: 'HEALTHY', expiresInDays: 30 },
+              { provider: 'lnkbio', status: 'HEALTHY', expiresInDays: 29 },
+            ],
+            playwrightSessions: [
+              { platform: 'SHOPEE_VIDEO', status: 'READY' },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      ) as unknown as typeof fetch;
+
+    const client = createBackendClient({
+      baseUrl: 'http://127.0.0.1:3001',
+      token: 'test-token',
+      fetchImpl: mockFetch,
+    });
+
+    const overview = await client.getLnkBioOverview();
+    expect(overview.profile.planTier).toBe('MINI');
+
+    const health = await client.getSystemHealth();
+    expect(health.oauthProviders.some((p) => p.provider === 'lnkbio')).toBe(true);
+  });
+
+  it('calls Threads endpoints (overview, connect, draft, publish)', async () => {
+    const sampleProfile = {
+      appId: '1811443116804615',
+      userId: '25000112233',
+      username: 'raraverse',
+      displayName: 'raraverse',
+      connected: true,
+      hasUserToken: true,
+      hasAppToken: true,
+      tokenStatus: 'USER_TOKEN',
+      expiresAt: '2027-01-17T00:00:00.000Z',
+    };
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ profile: sampleProfile, posts: [], logs: [] }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            connected: true,
+            tokenType: 'APP',
+            profile: sampleProfile,
+            expiresAt: '2027-01-17T00:00:00.000Z',
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            rootText: 'Hook produk',
+            replyText: 'Link https://shope.ee/mock01',
+            affiliateUrl: 'https://shope.ee/mock01',
+            mediaUrl: null,
+            resolvedMediaType: 'TEXT',
+          }),
+          { status: 200 }
+        )
+      ) as unknown as typeof fetch;
+
+    const client = createBackendClient({
+      baseUrl: 'http://127.0.0.1:3001',
+      token: 'test-token',
+      fetchImpl: mockFetch,
+    });
+
+    const overview = await client.getThreadsOverview();
+    expect(overview.profile.username).toBe('raraverse');
+
+    const conn = await client.connectThreadsAuth({ mode: 'client_credentials' });
+    expect(conn.tokenType).toBe('APP');
+
+    const draft = await client.draftThreadsProductPost(
+      '550e8400-e29b-41d4-a716-446655440001',
+      'TEXT'
+    );
+    expect(draft.affiliateUrl).toBe('https://shope.ee/mock01');
+  });
 });

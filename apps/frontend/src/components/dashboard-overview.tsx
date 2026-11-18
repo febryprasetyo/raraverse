@@ -51,6 +51,7 @@ const PLATFORM_LABELS: Record<TargetPlatform, string> = {
   YT_SHORTS: 'YouTube Shorts',
   SHOPEE_VIDEO: 'Shopee Video',
   TIKTOK_STUDIO: 'TikTok Studio',
+  THREADS: 'Threads',
 };
 
 export function DashboardOverviewContent({
@@ -85,6 +86,7 @@ export function DashboardOverviewContent({
       YT_SHORTS: 0,
       SHOPEE_VIDEO: 0,
       TIKTOK_STUDIO: 0,
+      THREADS: 0,
     };
     if (!data) return counts;
 

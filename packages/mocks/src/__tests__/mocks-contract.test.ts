@@ -8,6 +8,11 @@ import {
   loadMockMetaWebhookEvents,
   loadMockDmLogs,
   loadMockWeeklyEvaluation,
+  loadMockAffiliateLinks,
+  loadMockLnkBioSyncLogs,
+  loadMockLnkBioMetricsSnapshots,
+  loadMockThreadsPosts,
+  loadMockThreadsSyncLogs,
   resolveDataSourceMode,
 } from '../index.js';
 
@@ -36,6 +41,21 @@ describe('@ebieshop/mocks centralized JSON contract', () => {
 
     const weekly = loadMockWeeklyEvaluation();
     expect(weekly.items.length).toBeGreaterThan(0);
+
+    const affiliateLinks = loadMockAffiliateLinks();
+    expect(affiliateLinks.length).toBeGreaterThan(0);
+
+    const lnkBioLogs = loadMockLnkBioSyncLogs();
+    expect(lnkBioLogs.length).toBeGreaterThan(0);
+
+    const lnkBioMetrics = loadMockLnkBioMetricsSnapshots();
+    expect(lnkBioMetrics.length).toBeGreaterThan(0);
+
+    const threadsPosts = loadMockThreadsPosts();
+    expect(threadsPosts.length).toBeGreaterThan(0);
+
+    const threadsLogs = loadMockThreadsSyncLogs();
+    expect(threadsLogs.length).toBeGreaterThan(0);
   });
 
   it('resolves data source mode and fails fast in production when mock is active', () => {

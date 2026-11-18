@@ -14,9 +14,11 @@ import { registerAdminRoutes } from './routes/admin.routes.js';
 import { registerAnalyticsRoutes } from './routes/analytics.routes.js';
 import { registerContentRoutes } from './routes/content.routes.js';
 import { registerHealthRoutes } from './routes/health.routes.js';
+import { registerLnkBioRoutes } from './routes/lnkbio.routes.js';
 import { registerMetaWebhookRoutes } from './routes/meta-webhook.routes.js';
 import { registerProductRoutes } from './routes/products.routes.js';
 import { registerPublishRoutes } from './routes/publish.routes.js';
+import { registerThreadsRoutes } from './routes/threads.routes.js';
 import { registerWorkerRoutes } from './routes/workers.routes.js';
 import { registerBackendCronJobs, startBackendWorkers } from './workers/index.js';
 
@@ -77,6 +79,8 @@ export async function buildApp(options: BuildAppOptions) {
   registerAdminRoutes(app, adminGuard);
   registerWorkerRoutes(app, workerGuard, container);
   registerProductRoutes(app, container, adminGuard);
+  registerLnkBioRoutes(app, container, adminGuard);
+  registerThreadsRoutes(app, container, adminGuard);
   registerContentRoutes(app, container, adminGuard, workerGuard, queueRegistry);
   registerMetaWebhookRoutes(app, container, adminGuard, queueRegistry);
   registerPublishRoutes(app, container, adminGuard, queueRegistry);

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "77777777-7777-4777-8777-777777777701",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "threadsPostId": "66666666-6666-4666-8666-666666666601",
+    "operation": "PUBLISH_CHAIN",
+    "status": "SUCCESS",
+    "httpStatus": 200,
+    "requestPayload": {
+      "mediaType": "TEXT",
+      "username": "raraverse"
+    },
+    "responsePayload": {
+      "rootPostId": "1799000111222333",
+      "replyPostId": "1799000111222444"
+    },
+    "errorMessage": null,
+    "durationMs": 420,
+    "createdAt": "2026-11-18T09:30:00.000Z"
+  }
+]

@@ -1,23 +1,33 @@
-import { createDbClient } from '@ebieshop/db';
+import { createDbClient, decryptToken, encryptToken } from '@ebieshop/db';
 import type { EnvConfig } from './config/env.js';
+import { resolveTokenEncryptionKey } from './config/env.js';
 import type {
   IAnalyticsRepository,
   IContentAssetRepository,
   IDmLogRepository,
   IKalodataClient,
   ILlmProvider,
+  ILnkBioRepository,
   IProductRepository,
   IPublishJobRepository,
+  IThreadsRepository,
 } from './adapters/contracts.js';
 import {
   DrizzleAnalyticsRepository,
   DrizzleContentAssetRepository,
   DrizzleDmLogRepository,
+  DrizzleLnkBioRepository,
   DrizzleOAuthTokenRepository,
   DrizzleProductRepository,
   DrizzlePublishJobRepository,
+  DrizzleThreadsRepository,
 } from './adapters/drizzle-repositories.js';
 import { KalodataHttpClient } from './adapters/kalodata-client.js';
+import {
+  LnkBioHttpClient,
+  MockLnkBioClient,
+  type ILnkBioClient,
+} from './adapters/lnkbio-client.js';
 import {
   GeminiLlmProvider,
   OpenAiLlmProvider,
@@ -34,11 +44,25 @@ import {
   MockDmLogRepository,
   MockKalodataClient,
   MockLlmProvider,
+  MockLnkBioRepository,
+  MockOAuthTokenRepository,
   MockProductRepository,
   MockPublishJobRepository,
+  MockThreadsRepository,
 } from './adapters/mock-adapters.js';
+import {
+  MockThreadsClient,
+  ThreadsHttpClient,
+  type IThreadsClient,
+} from './adapters/threads-client.js';
+import { LnkBioAutomationService } from './services/lnkbio-automation.js';
+import { ThreadsAutomationService } from './services/threads-automation.js';
 import { MetaAutoDmProcessor } from './services/meta-auto-dm.js';
-import type { IOAuthTokenRepository } from './services/oauth-refresh.js';
+import {
+  packEncryptedRefreshToken,
+  unpackEncryptedRefreshToken,
+  type IOAuthTokenRepository,
+} from './services/oauth-refresh.js';
 import {
   MockStoragePresigner,
   R2Presigner,
@@ -49,6 +73,12 @@ import { TelegramAlertService } from './services/telegram-alert.js';
 export interface AppContainer {
   env: EnvConfig;
   kalodata: IKalodataClient;
+  lnkBio: ILnkBioClient;
+  lnkBioRepo: ILnkBioRepository;
+  lnkBioAutomation: LnkBioAutomationService;
+  threadsClient: IThreadsClient;
+  threadsRepo: IThreadsRepository;
+  threadsAutomation: ThreadsAutomationService;
   llm: ILlmProvider;
   scriptGenerator: ScriptGeneratorService;
   products: IProductRepository;
@@ -101,6 +131,8 @@ export function createAppContainer(env: EnvConfig): AppContainer {
   let contentAssets: IContentAssetRepository;
   let publishJobs: IPublishJobRepository;
   let dmLogs: IDmLogRepository;
+  let lnkBioRepo: ILnkBioRepository;
+  let threadsRepo: IThreadsRepository;
   let oauthTokens: IOAuthTokenRepository | undefined;
   let analytics: IAnalyticsRepository;
   let storage: IStoragePresigner;
@@ -112,6 +144,8 @@ export function createAppContainer(env: EnvConfig): AppContainer {
     contentAssets = new DrizzleContentAssetRepository(db);
     publishJobs = new DrizzlePublishJobRepository(db);
     dmLogs = new DrizzleDmLogRepository(db);
+    lnkBioRepo = new DrizzleLnkBioRepository(db);
+    threadsRepo = new DrizzleThreadsRepository(db);
     oauthTokens = new DrizzleOAuthTokenRepository(db);
     analytics = new DrizzleAnalyticsRepository(db);
     storage =
@@ -136,9 +170,116 @@ export function createAppContainer(env: EnvConfig): AppContainer {
     contentAssets = new MockContentAssetRepository();
     publishJobs = new MockPublishJobRepository();
     dmLogs = new MockDmLogRepository();
+    lnkBioRepo = new MockLnkBioRepository();
+    threadsRepo = new MockThreadsRepository();
+    oauthTokens = new MockOAuthTokenRepository();
     analytics = new MockAnalyticsRepository();
     storage = new MockStoragePresigner();
   }
+
+  const encKeyHex = resolveTokenEncryptionKey(env);
+  const useLiveLnkBio =
+    env.LNKBIO_MODE === 'real' ||
+    Boolean(env.LNKBIO_ACCESS_TOKEN) ||
+    (env.DATA_SOURCE_MODE === 'real' &&
+      Boolean(env.LNKBIO_CLIENT_ID && env.LNKBIO_CLIENT_SECRET));
+
+  const lnkBio: ILnkBioClient = useLiveLnkBio
+    ? new LnkBioHttpClient({
+        accessToken: env.LNKBIO_ACCESS_TOKEN,
+        clientId: env.LNKBIO_CLIENT_ID,
+        clientSecret: env.LNKBIO_CLIENT_SECRET,
+        resolveToken: async () => {
+          if (!oauthTokens?.getTokenByProvider || !encKeyHex) return null;
+          const record = await oauthTokens.getTokenByProvider('lnkbio');
+          if (!record || record.needsReauth) return null;
+          const accessToken = decryptToken(
+            {
+              ciphertext: record.encryptedAccessToken,
+              iv: record.tokenIv,
+              authTag: record.tokenAuthTag,
+            },
+            encKeyHex
+          );
+          const refreshToken = record.encryptedRefreshToken
+            ? unpackEncryptedRefreshToken(
+                record.encryptedRefreshToken,
+                record.tokenIv,
+                record.tokenAuthTag,
+                encKeyHex
+              )
+            : undefined;
+          return { accessToken, refreshToken };
+        },
+        onTokenRefreshed: async (tok) => {
+          if (!oauthTokens?.upsertToken || !encKeyHex) return;
+          const encAccess = encryptToken(tok.accessToken, encKeyHex);
+          const encRefresh = tok.refreshToken
+            ? packEncryptedRefreshToken(tok.refreshToken, encKeyHex)
+            : null;
+          await oauthTokens.upsertToken({
+            provider: 'lnkbio',
+            accountLabel: 'ebieshop',
+            externalAccountId: env.LNKBIO_CLIENT_ID ?? 'lnkbio_default',
+            encryptedAccessToken: encAccess.ciphertext,
+            encryptedRefreshToken: encRefresh,
+            tokenIv: encAccess.iv,
+            tokenAuthTag: encAccess.authTag,
+            scopes: 'lnk.read,lnk.write',
+            expiresAt: new Date(Date.now() + tok.expiresInSec * 1000),
+            needsReauth: false,
+          });
+        },
+      })
+    : new MockLnkBioClient();
+
+  const lnkBioAutomation = new LnkBioAutomationService({
+    env,
+    client: lnkBio,
+    repo: lnkBioRepo,
+    products,
+    analytics,
+    oauthTokens,
+  });
+
+  const useLiveThreads =
+    env.THREADS_MODE === 'real' ||
+    Boolean(env.THREADS_ACCESS_TOKEN) ||
+    (env.DATA_SOURCE_MODE === 'real' &&
+      Boolean(env.THREADS_APP_ID && env.THREADS_APP_SECRET));
+
+  const threadsClient: IThreadsClient = useLiveThreads
+    ? new ThreadsHttpClient({
+        appId: env.THREADS_APP_ID,
+        appSecret: env.THREADS_APP_SECRET,
+        displayName: env.THREADS_DISPLAY_NAME,
+        userId: env.THREADS_USER_ID,
+        userAccessToken: env.THREADS_ACCESS_TOKEN,
+        resolveUserToken: async () => {
+          if (!oauthTokens?.getTokenByProvider || !encKeyHex) return null;
+          const record = await oauthTokens.getTokenByProvider('threads');
+          if (!record || record.needsReauth) return null;
+          const accessToken = decryptToken(
+            {
+              ciphertext: record.encryptedAccessToken,
+              iv: record.tokenIv,
+              authTag: record.tokenAuthTag,
+            },
+            encKeyHex
+          );
+          return { accessToken, userId: record.externalAccountId };
+        },
+      })
+    : new MockThreadsClient();
+
+  const threadsAutomation = new ThreadsAutomationService({
+    env,
+    client: threadsClient,
+    repo: threadsRepo,
+    products,
+    llm,
+    oauthTokens,
+  });
 
   const ownAccountIds = [env.META_OWN_IG_USER_ID, env.META_OWN_PAGE_ID].filter(
     (id): id is string => Boolean(id)
@@ -159,6 +300,12 @@ export function createAppContainer(env: EnvConfig): AppContainer {
   return {
     env,
     kalodata,
+    lnkBio,
+    lnkBioRepo,
+    lnkBioAutomation,
+    threadsClient,
+    threadsRepo,
+    threadsAutomation,
     llm,
     scriptGenerator: new ScriptGeneratorService(llm),
     products,

@@ -17,6 +17,7 @@ const ALL_PLATFORMS: TargetPlatform[] = [
   'YT_SHORTS',
   'SHOPEE_VIDEO',
   'TIKTOK_STUDIO',
+  'THREADS',
 ];
 
 export interface SchedulerBoardProps {
@@ -171,7 +172,7 @@ export function SchedulerBoard({
         {actionError ? (
           <div
             role="alert"
-            className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+            className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-rose-500/40 bg-rose-950/50 px-4 py-3 text-xs text-rose-200"
           >
             <span>{actionError}</span>
             <button

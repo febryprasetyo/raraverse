@@ -7,6 +7,12 @@ import {
   dmLogs,
   oauthTokens,
   productMetricsWeekly,
+  affiliateLinks,
+  lnkBioSyncLogs,
+  lnkBioMetricsSnapshots,
+  threadsPosts,
+  threadsSyncLogs,
+  platformEnum,
   encryptToken,
   decryptToken,
 } from '../index.js';
@@ -45,6 +51,35 @@ describe('@ebieshop/db schema and crypto', () => {
 
     const weeklyCfg = getTableConfig(productMetricsWeekly);
     expect(weeklyCfg.name).toBe('product_metrics_weekly');
+
+    const affiliateCfg = getTableConfig(affiliateLinks);
+    expect(affiliateCfg.name).toBe('affiliate_links');
+    expect(affiliateCfg.indexes.map((i) => i.config.name)).toContain(
+      'affiliate_links_product_uq'
+    );
+    expect(affiliateCfg.indexes.map((i) => i.config.name)).toContain(
+      'affiliate_links_redirect_code_uq'
+    );
+
+    const syncLogsCfg = getTableConfig(lnkBioSyncLogs);
+    expect(syncLogsCfg.name).toBe('lnk_bio_sync_logs');
+
+    const snapshotsCfg = getTableConfig(lnkBioMetricsSnapshots);
+    expect(snapshotsCfg.name).toBe('lnk_bio_metrics_snapshots');
+
+    const threadsPostsCfg = getTableConfig(threadsPosts);
+    expect(threadsPostsCfg.name).toBe('threads_posts');
+    expect(threadsPostsCfg.indexes.map((i) => i.config.name)).toContain(
+      'threads_posts_product_idx'
+    );
+
+    const threadsSyncLogsCfg = getTableConfig(threadsSyncLogs);
+    expect(threadsSyncLogsCfg.name).toBe('threads_sync_logs');
+    expect(threadsSyncLogsCfg.indexes.map((i) => i.config.name)).toContain(
+      'threads_sync_logs_op_created_idx'
+    );
+
+    expect(platformEnum.enumValues).toContain('THREADS');
   });
 
   it('encrypts and decrypts OAuth tokens using AES-256-GCM and detects tampering', () => {

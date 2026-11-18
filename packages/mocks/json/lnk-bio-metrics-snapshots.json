@@ -1,0 +1,36 @@
+[
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440001",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "affiliateLinkId": "660e8400-e29b-41d4-a716-446655440001",
+    "lnkBioId": "mock_lnkbio_001",
+    "snapshotDate": "2026-11-18T08:00:00.000Z",
+    "lnkBioClicks": 162,
+    "internalRedirectClicks": 184,
+    "totalTrackedClicks": 184,
+    "ctrPct": 3.42,
+    "estimatedCommissionIdr": 245000,
+    "performanceScore": 2085,
+    "utmBreakdown": {
+      "lnkbio": 184
+    },
+    "createdAt": "2026-11-18T08:00:00.000Z"
+  },
+  {
+    "id": "880e8400-e29b-41d4-a716-446655440002",
+    "productId": "550e8400-e29b-41d4-a716-446655440002",
+    "affiliateLinkId": "660e8400-e29b-41d4-a716-446655440002",
+    "lnkBioId": "mock_lnkbio_002",
+    "snapshotDate": "2026-11-18T08:00:00.000Z",
+    "lnkBioClicks": 85,
+    "internalRedirectClicks": 97,
+    "totalTrackedClicks": 97,
+    "ctrPct": 2.15,
+    "estimatedCommissionIdr": 120000,
+    "performanceScore": 1090,
+    "utmBreakdown": {
+      "lnkbio": 97
+    },
+    "createdAt": "2026-11-18T08:00:00.000Z"
+  }
+]

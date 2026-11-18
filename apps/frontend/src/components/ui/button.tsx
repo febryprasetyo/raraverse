@@ -8,9 +8,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT_CLASSES: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
-    'bg-slate-900 text-white shadow-sm hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 focus-visible:ring-slate-900 dark:focus-visible:ring-emerald-400',
+    'bg-emerald-600 text-white shadow-sm hover:bg-emerald-500 focus-visible:ring-emerald-400',
   secondary:
-    'border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.03)] hover:bg-[var(--bg-subtle)] focus-visible:ring-slate-400',
+    'border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(15,23,42,0.12)] hover:bg-[var(--bg-subtle)] focus-visible:ring-slate-400',
   danger:
     'bg-rose-600 text-white shadow-sm hover:bg-rose-500 focus-visible:ring-rose-500',
   ghost:

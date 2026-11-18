@@ -10,8 +10,52 @@
     "isOfficialStore": true,
     "weeklyRevenueIdr": 18500000,
     "weeklyUnitsSold": 370,
+    "unitPriceExactIdr": 49900,
+    "revenueExactIdr": 18500000,
+    "revenueGrowthRatePct": 18.4,
+    "liveRevenueIdr": 6200000,
+    "videoRevenueIdr": 11800000,
+    "showcaseRevenueIdr": 500000,
+    "launchDate": "2026-07-10",
+    "sellerId": "7494000000000000001",
+    "sellerName": "Tosera Official Store",
+    "skuCount": "2",
+    "priCategory": {
+      "categoryId": "600001",
+      "categoryName": "Perlengkapan Rumah"
+    },
+    "secCategory": {
+      "categoryId": "600101",
+      "categoryName": "Peralatan Dapur"
+    },
+    "terCategory": {
+      "categoryId": "600201",
+      "categoryName": "Rak Penyimpanan"
+    },
     "referenceVideoUrls": [
       "https://cdn.example.com/kalodata/ref-rak-01.mp4"
+    ],
+    "referenceVideos": [
+      {
+        "videoId": "7690000000000000001",
+        "videoTitle": "Dapur estetik tanpa bor #rakdapur #perlengkapandapur",
+        "belongedCreatorId": "7100000000000000001",
+        "belongedCreatorHandle": "dapur.estetik",
+        "videoUrl": "https://cdn.example.com/kalodata/ref-rak-01.mp4",
+        "revenue": 11800000,
+        "views": 184200,
+        "revenueGrowthRate": 0.42,
+        "adsRoas": 3.15,
+        "diggCount": 4120,
+        "shareCount": 215,
+        "commentCount": 148,
+        "adRevenueRatio": 72.5,
+        "adViewRatio": 64.2,
+        "creatorDebut": "2024-02-11",
+        "ad": 1,
+        "aiVideo": 0,
+        "publishDate": "2026/11/08 19:15:00"
+      }
     ]
   },
   {
@@ -25,8 +69,170 @@
     "isOfficialStore": false,
     "weeklyRevenueIdr": 11200000,
     "weeklyUnitsSold": 344,
+    "unitPriceExactIdr": 32500,
+    "revenueExactIdr": 11200000,
+    "revenueGrowthRatePct": -6.8,
+    "liveRevenueIdr": 3100000,
+    "videoRevenueIdr": 7900000,
+    "showcaseRevenueIdr": 200000,
+    "launchDate": "2026-08-03",
+    "sellerId": "7494000000000000002",
+    "sellerName": "Cahaya Rumah Shop",
+    "skuCount": "4",
+    "priCategory": {
+      "categoryId": "600001",
+      "categoryName": "Perlengkapan Rumah"
+    },
+    "secCategory": {
+      "categoryId": "600102",
+      "categoryName": "Lampu & Pencahayaan"
+    },
+    "terCategory": {
+      "categoryId": "600202",
+      "categoryName": "Lampu Sensor"
+    },
     "referenceVideoUrls": [
       "https://cdn.example.com/kalodata/ref-lampu-02.mp4"
+    ],
+    "referenceVideos": [
+      {
+        "videoId": "7690000000000000002",
+        "videoTitle": "Lampu sensor otomatis tanpa kabel #lampulemari",
+        "belongedCreatorId": "7100000000000000002",
+        "belongedCreatorHandle": "rumah.minimalis",
+        "videoUrl": "https://cdn.example.com/kalodata/ref-lampu-02.mp4",
+        "revenue": 7900000,
+        "views": 96400,
+        "revenueGrowthRate": -0.12,
+        "adsRoas": 2.4,
+        "diggCount": 2110,
+        "shareCount": 98,
+        "commentCount": 76,
+        "adRevenueRatio": 65.0,
+        "adViewRatio": 58.0,
+        "creatorDebut": "2025-01-19",
+        "ad": 1,
+        "aiVideo": 0,
+        "publishDate": "2026/11/10 11:30:00"
+      }
     ]
+  },
+  {
+    "kalodataProductId": "1736576509412607102",
+    "name": "11.11 SALE PAKET NEW GLOWING BOOSTER LS SKINCARE (ELSTM)",
+    "niche": "skincare",
+    "priceIdr": 91516,
+    "rating": 4.9,
+    "commissionRatePct": 15,
+    "isCommissionXtra": true,
+    "isOfficialStore": true,
+    "imageUrl": "https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/ec3d25782cf74360a917e78e8fa2c4de~tplv-aphluv4xwc-resize-webp:800:800.jpeg",
+    "weeklyRevenueIdr": 1607486502,
+    "weeklyUnitsSold": 17565,
+    "unitPriceExactIdr": 91516.45,
+    "revenueExactIdr": 1607486501.82,
+    "revenueGrowthRatePct": 9.57,
+    "liveRevenueIdr": 375033343.21,
+    "videoRevenueIdr": 1232361834.41,
+    "showcaseRevenueIdr": 91324.2,
+    "launchDate": "2026-08-15",
+    "sellerId": "7494524362275129470",
+    "sellerName": "LS SKINCARE REBORNOFFICIAL",
+    "skuCount": "1",
+    "priCategory": {
+      "categoryId": "601450",
+      "categoryName": "Perawatan & Kecantikan"
+    },
+    "secCategory": {
+      "categoryId": "848776",
+      "categoryName": "Skincare"
+    },
+    "terCategory": {
+      "categoryId": "601611",
+      "categoryName": "Kit Perawatan Kulit"
+    },
+    "referenceVideoUrls": [
+      "https://www.tiktok.com/@hilkaazzura/video/7685958821180624135",
+      "https://www.tiktok.com/@dellia_skincare/video/7706208636762213639"
+    ],
+    "referenceVideos": [
+      {
+        "videoId": "7685958821180624135",
+        "videoTitle": "Membalas @chaspallspill #lsskincare #skincareroutine",
+        "belongedCreatorId": "7220799642455114778",
+        "belongedCreatorHandle": "hilkaazzura",
+        "videoUrl": "https://www.tiktok.com/@hilkaazzura/video/7685958821180624135",
+        "revenue": 229871437.91,
+        "views": 615198,
+        "revenueGrowthRate": -0.13,
+        "adsRoas": 2.85,
+        "diggCount": 8463,
+        "shareCount": 651,
+        "commentCount": 991,
+        "adRevenueRatio": 80,
+        "adViewRatio": 97.75470661478093,
+        "creatorDebut": "2025-03-27",
+        "ad": 1,
+        "aiVideo": 0,
+        "publishDate": "2026/09/16 09:45:44"
+      },
+      {
+        "videoId": "7706208636762213639",
+        "videoTitle": "Ls skincare #fyp",
+        "belongedCreatorId": "7187344586367976475",
+        "belongedCreatorHandle": "dellia_skincare",
+        "videoUrl": "https://www.tiktok.com/@dellia_skincare/video/7706208636762213639",
+        "revenue": 154609427.81,
+        "views": 474849,
+        "revenueGrowthRate": 1.04,
+        "adsRoas": 3.07,
+        "diggCount": 1817,
+        "shareCount": 43,
+        "commentCount": 60,
+        "adRevenueRatio": 78.71447139702221,
+        "adViewRatio": 92.27880863179664,
+        "creatorDebut": "2024-10-08",
+        "ad": 1,
+        "aiVideo": 0,
+        "publishDate": "2026/11/09 23:25:27"
+      }
+    ]
+  },
+  {
+    "kalodataProductId": "1736805940517045607",
+    "name": "Complete Package - Puragen hybright-XT | Daviena Skincare",
+    "niche": "skincare",
+    "priceIdr": 425778,
+    "rating": 4.9,
+    "commissionRatePct": 5,
+    "isCommissionXtra": false,
+    "isOfficialStore": true,
+    "imageUrl": "https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv4xwc-sg/a9a34f6007844529ab4ebb2828b4e118~tplv-aphluv4xwc-resize-webp:800:800.jpeg",
+    "weeklyRevenueIdr": 1453604477,
+    "weeklyUnitsSold": 3414,
+    "unitPriceExactIdr": 425777.53,
+    "revenueExactIdr": 1453604476.86,
+    "revenueGrowthRatePct": 30.3,
+    "liveRevenueIdr": 396481823.62,
+    "videoRevenueIdr": 1057122653.23,
+    "showcaseRevenueIdr": 0,
+    "launchDate": "2026-08-01",
+    "sellerId": "7494502404387277159",
+    "sellerName": "Daviena Skincare Official",
+    "skuCount": "3",
+    "priCategory": {
+      "categoryId": "601450",
+      "categoryName": "Perawatan & Kecantikan"
+    },
+    "secCategory": {
+      "categoryId": "848776",
+      "categoryName": "Skincare"
+    },
+    "terCategory": {
+      "categoryId": "601611",
+      "categoryName": "Kit Perawatan Kulit"
+    },
+    "referenceVideoUrls": [],
+    "referenceVideos": []
   }
 ]

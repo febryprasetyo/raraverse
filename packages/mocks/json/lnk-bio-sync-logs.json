@@ -1,0 +1,22 @@
+[
+  {
+    "id": "770e8400-e29b-41d4-a716-446655440001",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "affiliateLinkId": "660e8400-e29b-41d4-a716-446655440001",
+    "operation": "ADD",
+    "status": "SUCCESS",
+    "httpStatus": 200,
+    "requestPayload": {
+      "title": "#001 - Rak Bumbu Dapur 2 Tingkat Baja Karbon Anti Karat",
+      "group_id": "grp_dapur_01"
+    },
+    "responsePayload": {
+      "status": true,
+      "lnk_id": "mock_lnkbio_001"
+    },
+    "errorMessage": null,
+    "attemptCount": 1,
+    "durationMs": 142,
+    "createdAt": "2026-11-18T08:00:00.000Z"
+  }
+]

@@ -1,5 +1,7 @@
 import type { PublishJobPayload, PublishJobRecord } from '@ebieshop/shared';
 import type { IPublishJobRepository } from './contracts.js';
+import type { IThreadsClient } from './threads-client.js';
+import { isPublicHttpsUrl } from '../services/threads-automation.js';
 
 export interface PublishResult {
   platformPostId: string;
@@ -278,6 +280,40 @@ export class YtShortsPublisher implements IPlatformPublisher {
     return {
       platformPostId: videoId,
       platformPostUrl: `https://www.youtube.com/shorts/${videoId}`,
+    };
+  }
+}
+
+export class ThreadsPublisher implements IPlatformPublisher {
+  private readonly threadsClient: IThreadsClient;
+  private readonly publicBaseUrl: string;
+
+  constructor(options: {
+    threadsClient: IThreadsClient;
+    publicBaseUrl: string;
+  }) {
+    this.threadsClient = options.threadsClient;
+    this.publicBaseUrl = options.publicBaseUrl.replace(/\/$/, '');
+  }
+
+  async publish(payload: PublishJobPayload): Promise<PublishResult> {
+    const videoUrl = `${this.publicBaseUrl}/${payload.videoR2Key.replace(/^\/+/, '')}`;
+    if (!isPublicHttpsUrl(videoUrl)) {
+      throw new Error(
+        `Threads VIDEO publish membutuhkan R2_PUBLIC_BASE_URL HTTPS publik (saat ini: ${this.publicBaseUrl})`
+      );
+    }
+
+    const res = await this.threadsClient.publishChainedThread({
+      mediaType: 'VIDEO',
+      rootText: payload.captionSeo.slice(0, 480),
+      replyText: payload.pinnedComment.slice(0, 480),
+      mediaUrl: videoUrl,
+    });
+
+    return {
+      platformPostId: res.rootPostId,
+      ...(res.permalink ? { platformPostUrl: res.permalink } : {}),
     };
   }
 }

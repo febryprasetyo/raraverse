@@ -87,7 +87,7 @@ export function ContentGallery({
         </div>
         <Link
           href="/studio"
-          className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
         >
           + Buat Konten Baru
         </Link>
@@ -205,7 +205,7 @@ export function ContentGallery({
                     onClick={() =>
                       void handleAction(asset.id, () => onDelete(asset.id))
                     }
-                    className="ml-auto text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                    className="ml-auto text-rose-400 hover:bg-rose-950/40"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>

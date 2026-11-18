@@ -10,12 +10,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  Moon,
   Package,
-  Sun,
   X,
 } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth-context';
 
 export const NAV_ITEMS = [
@@ -27,33 +25,55 @@ export const NAV_ITEMS = [
   { href: '/health', label: 'System Health', icon: Activity },
 ] as const;
 
+export const PRODUCT_SUB_ITEMS = [
+  { href: '/products', label: 'Product Discovery' },
+  { href: '/products/curation', label: 'Produk Kurasi' },
+  { href: '/products/lnkbio', label: 'Lnk.Bio Manager' },
+  { href: '/products/threads', label: 'Threads Automation' },
+] as const;
+
+function renderProductSubMenu(pathname: string) {
+  return (
+    <div
+      className="ml-4 mt-1 space-y-1 border-l border-slate-800 pl-3"
+      role="group"
+      aria-label="Submenu Produk & Kampanye"
+    >
+      {PRODUCT_SUB_ITEMS.map((sub) => {
+        const subActive = pathname === sub.href;
+        return (
+          <Link
+            key={sub.href}
+            href={sub.href}
+            aria-current={subActive ? 'page' : undefined}
+            className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+              subActive
+                ? 'border border-emerald-500/30 bg-teal-950/80 text-emerald-300'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                subActive ? 'bg-emerald-400' : 'bg-slate-600'
+              }`}
+              aria-hidden="true"
+            />
+            <span className="truncate">{sub.label}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { token, isReady, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem('ebieshop_theme');
-      const isDark = saved === 'dark';
-      setDarkMode(isDark);
-      document.documentElement.classList.toggle('dark', isDark);
-    } catch {
-      // Ignore storage errors
-    }
+    document.documentElement.classList.add('dark');
   }, []);
-
-  function toggleTheme() {
-    const next = !darkMode;
-    setDarkMode(next);
-    document.documentElement.classList.toggle('dark', next);
-    try {
-      window.localStorage.setItem('ebieshop_theme', next ? 'dark' : 'light');
-    } catch {
-      // Ignore storage errors
-    }
-  }
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -75,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)]">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-emerald-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
       >
         Lewati ke konten utama
       </a>
@@ -100,18 +120,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={darkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
-            className="rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-2 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-          >
-            {darkMode ? (
-              <Sun className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <Moon className="h-4 w-4" aria-hidden="true" />
-            )}
-          </button>
         </div>
 
         {/* Navigation Menu */}
@@ -124,30 +132,34 @@ export function AppShell({ children }: { children: ReactNode }) {
             const active =
               item.href === '/'
                 ? pathname === '/' || pathname === '/analytics'
-                : item.href === '/scheduler'
-                  ? pathname === '/scheduler' || pathname === '/dm-logs'
-                  : pathname === item.href;
+                : item.href === '/products'
+                  ? pathname === '/products' || pathname.startsWith('/products/')
+                  : item.href === '/scheduler'
+                    ? pathname === '/scheduler' || pathname === '/dm-logs'
+                    : pathname === item.href;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={`group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-                  active
-                    ? 'bg-slate-900 text-white shadow-[0_6px_16px_rgba(15,23,42,0.14)] dark:bg-emerald-600 dark:text-white'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <Icon
-                  className={`h-4 w-4 shrink-0 transition-colors ${
+              <Fragment key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                     active
-                      ? 'text-emerald-400 dark:text-white'
-                      : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
+                      ? 'bg-emerald-600 text-white shadow-[0_6px_16px_rgba(5,150,105,0.28)]'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
                   }`}
-                  aria-hidden="true"
-                />
-                <span className="truncate">{item.label}</span>
-              </Link>
+                >
+                  <Icon
+                    className={`h-4 w-4 shrink-0 transition-colors ${
+                      active
+                        ? 'text-white'
+                        : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+                {item.href === '/products' ? renderProductSubMenu(pathname) : null}
+              </Fragment>
             );
           })}
         </nav>
@@ -155,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Bottom Creator Session Card */}
         <div className="mt-6 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] p-3.5">
           <div className="mb-3 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-950 text-xs font-bold text-emerald-300">
               KA
             </div>
             <div className="min-w-0">
@@ -180,7 +192,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ) : (
             <Link
               href="/login"
-              className="block rounded-xl bg-slate-900 px-3 py-1.5 text-center text-xs font-semibold text-white hover:bg-slate-800 dark:bg-emerald-600"
+              className="block rounded-xl bg-emerald-600 px-3 py-1.5 text-center text-xs font-semibold text-white hover:bg-emerald-500"
             >
               Masuk Admin
             </Link>
@@ -198,14 +210,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-sm font-bold text-[var(--text-primary)]">EBIESHOP</span>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={darkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
-              className="rounded-lg p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
-            >
-              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
             <button
               type="button"
               aria-label={drawerOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
@@ -233,21 +237,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="space-y-1">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const active = pathname === item.href;
+                const active =
+                  item.href === '/products'
+                    ? pathname === '/products' || pathname.startsWith('/products/')
+                    : pathname === item.href;
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={active ? 'page' : undefined}
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium ${
-                      active
-                        ? 'bg-slate-900 text-white dark:bg-emerald-600'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                    <span>{item.label}</span>
-                  </Link>
+                  <Fragment key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium ${
+                        active
+                          ? 'bg-emerald-600 text-white'
+                          : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      <span>{item.label}</span>
+                    </Link>
+                    {item.href === '/products' ? renderProductSubMenu(pathname) : null}
+                  </Fragment>
                 );
               })}
             </div>
