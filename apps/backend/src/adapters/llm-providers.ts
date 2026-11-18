@@ -415,6 +415,7 @@ export class GeminiLlmProvider implements ILlmProvider {
         ],
         generationConfig: { responseMimeType: 'application/json' },
       }),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {
@@ -558,6 +559,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
           },
         ],
       }),
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {
