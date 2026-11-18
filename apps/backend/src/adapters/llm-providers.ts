@@ -111,6 +111,78 @@ function extractJsonText(raw: string): string {
   return fenced?.[1]?.trim() ?? trimmed;
 }
 
+function clampString(value: unknown, maxLen: number): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return trimmed.length > maxLen ? trimmed.slice(0, maxLen).trim() : trimmed;
+}
+
+function normalizeHashtags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return ['#fyp'];
+  const cleaned = raw
+    .map((item) => {
+      if (typeof item !== 'string') return '';
+      const stripped = item.trim().replace(/^#+/, '').replace(/[^a-zA-Z0-9_]/g, '');
+      return stripped ? `#${stripped}` : '';
+    })
+    .filter((tag) => /^#[a-zA-Z0-9_]+$/.test(tag));
+  const unique = [...new Set(cleaned)].slice(0, 15);
+  return unique.length > 0 ? unique : ['#fyp'];
+}
+
+function parseScriptGeneratorOutput(parsedJson: unknown): ScriptGeneratorOutput {
+  const obj =
+    parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)
+      ? (parsedJson as Record<string, unknown>)
+      : null;
+
+  if (!obj) {
+    throw new AppError(502, 'LLM returned non-object JSON payload for storyboard script');
+  }
+
+  const normalizedSceneCues = Array.isArray(obj.sceneCues)
+    ? obj.sceneCues.slice(0, 10).map((cue, idx) => {
+        const c = cue && typeof cue === 'object' ? (cue as Record<string, unknown>) : {};
+        const rawOrder = Number(c.order);
+        const order = Number.isInteger(rawOrder) && rawOrder > 0 ? rawOrder : idx + 1;
+        const visualFocus = clampString(c.visualFocus, 500) ?? `Scene ${idx + 1}`;
+        const doodleText = clampString(c.doodleText, 80);
+        const rawDur = Number(c.durationSec);
+        const durationSec =
+          Number.isFinite(rawDur) && rawDur > 0 ? Math.min(rawDur, 15) : 3;
+        return {
+          order,
+          visualFocus: visualFocus.length >= 2 ? visualFocus : `${visualFocus}.`,
+          ...(doodleText ? { doodleText } : {}),
+          durationSec,
+        };
+      })
+    : [];
+
+  const normalized = {
+    ...obj,
+    hook: clampString(obj.hook, 160) ?? obj.hook,
+    scriptVoiceover: clampString(obj.scriptVoiceover, 1200) ?? obj.scriptVoiceover,
+    captionSeo: clampString(obj.captionSeo, 2200) ?? obj.captionSeo,
+    hashtags: normalizeHashtags(obj.hashtags),
+    pinnedComment: clampString(obj.pinnedComment, 500) ?? obj.pinnedComment,
+    ...(obj.storyboardPrompt !== undefined
+      ? { storyboardPrompt: clampString(obj.storyboardPrompt, 1000) }
+      : {}),
+    sceneCues: normalizedSceneCues,
+  };
+
+  const result = ScriptGeneratorOutputSchema.safeParse(normalized);
+  if (!result.success) {
+    const issueMsg = result.error.issues
+      .map((i) => `${i.path.join('.') || 'root'}: ${i.message}`)
+      .join('; ');
+    throw new AppError(502, `LLM script output invalid: ${issueMsg}`);
+  }
+  return result.data;
+}
+
 const KEYWORD_STOPWORDS = new Set([
   'SALE',
   'PAKET',
@@ -431,7 +503,7 @@ export class GeminiLlmProvider implements ILlmProvider {
     };
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const parsedJson = JSON.parse(extractJsonText(rawText)) as unknown;
-    return ScriptGeneratorOutputSchema.parse(parsedJson);
+    return parseScriptGeneratorOutput(parsedJson);
   }
 
   async generateTriggerKeyword(input: {
@@ -575,7 +647,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
     };
     const rawText = data.choices?.[0]?.message?.content ?? '';
     const parsedJson = JSON.parse(extractJsonText(rawText)) as unknown;
-    return ScriptGeneratorOutputSchema.parse(parsedJson);
+    return parseScriptGeneratorOutput(parsedJson);
   }
 
   async generateTriggerKeyword(input: {
