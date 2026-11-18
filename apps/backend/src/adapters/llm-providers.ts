@@ -467,43 +467,57 @@ export class GeminiLlmProvider implements ILlmProvider {
     angle: string;
     storyboardPrompt?: string;
   }): Promise<ScriptGeneratorOutput> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
-    const response = await this.fetchFn(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: buildScriptPrompt(
-                  input.product,
-                  input.angle,
-                  input.storyboardPrompt
-                ),
-              },
-            ],
-          },
-        ],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
+    const candidateModels = [
+      ...new Set([this.model, 'gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']),
+    ];
+    const promptText = buildScriptPrompt(
+      input.product,
+      input.angle,
+      input.storyboardPrompt
+    );
+    let lastError: AppError | null = null;
 
-    if (!response.ok) {
-      const bodyText = await response.text().catch(() => '');
-      throw new AppError(
-        response.status === 429 ? 429 : 502,
-        `Gemini API error (${response.status} ${response.statusText}): ${bodyText.slice(0, 200)}`
-      );
+    for (const model of candidateModels) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
+      let response: Response;
+      try {
+        response = await this.fetchFn(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: { responseMimeType: 'application/json' },
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Gemini fetch failed';
+        lastError = new AppError(502, `Gemini API error (${model}): ${msg}`);
+        continue;
+      }
+
+      if (!response.ok) {
+        const bodyText = await response.text().catch(() => '');
+        const appErr = new AppError(
+          response.status === 429 ? 429 : 502,
+          `Gemini API error (${response.status} ${response.statusText}): ${bodyText.slice(0, 200)}`
+        );
+        if (response.status === 503 || response.status === 429 || response.status === 404) {
+          lastError = appErr;
+          continue;
+        }
+        throw appErr;
+      }
+
+      const data = (await response.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      };
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      const parsedJson = JSON.parse(extractJsonText(rawText)) as unknown;
+      return parseScriptGeneratorOutput(parsedJson);
     }
 
-    const data = (await response.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    const parsedJson = JSON.parse(extractJsonText(rawText)) as unknown;
-    return parseScriptGeneratorOutput(parsedJson);
+    throw lastError ?? new AppError(502, 'Gemini API unavailable across all fallback models');
   }
 
   async generateTriggerKeyword(input: {
