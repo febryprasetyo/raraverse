@@ -457,7 +457,7 @@ export class GeminiLlmProvider implements ILlmProvider {
       throw new Error('GEMINI_API_KEY is required for GeminiLlmProvider');
     }
     this.apiKey = options.apiKey;
-    this.model = options.model ?? 'gemini-2.5-flash';
+    this.model = options.model ?? 'gemini-4-hydrogen';
     this.providerName = `gemini:${this.model}`;
     this.fetchFn = options.fetchFn ?? fetch;
   }
