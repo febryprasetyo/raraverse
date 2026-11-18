@@ -128,6 +128,26 @@ export interface ApiClientOptions {
   fetchImpl?: typeof fetch;
 }
 
+/**
+ * Resolves the backend base URL for browser and SSR contexts.
+ * Falls back to same-origin relative paths when accessed from a remote host
+ * (e.g. Cloudflare Tunnel) while NEXT_PUBLIC_API_URL points to loopback.
+ */
+export function resolveApiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    if (
+      !configured ||
+      (!isLocalHost && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configured))
+    ) {
+      return '';
+    }
+  }
+  return configured || 'http://127.0.0.1:3001';
+}
+
 export function createBackendClient(options: ApiClientOptions) {
   const fetcher = options.fetchImpl ?? fetch;
   const base = options.baseUrl.replace(/\/$/, '');

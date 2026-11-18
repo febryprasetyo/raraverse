@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatePanel } from '@/components/ui/state-panel';
+import { resolveApiBaseUrl } from '@/lib/api-client';
 
 export interface ContentGalleryProps {
   assets: ContentAsset[];
@@ -31,10 +32,7 @@ function resolveVideoUrl(videoR2Key: string): string {
   if (process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL) {
     return `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/${videoR2Key}`;
   }
-  const apiBase = (
-    process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001'
-  ).replace(/\/$/, '');
-  return `${apiBase}/api/v1/assets/local-file/${videoR2Key}`;
+  return `${resolveApiBaseUrl()}/api/v1/assets/local-file/${videoR2Key}`;
 }
 
 export function ContentGallery({

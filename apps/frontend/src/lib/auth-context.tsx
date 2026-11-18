@@ -9,11 +9,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { createBackendClient } from './api-client';
+import { createBackendClient, resolveApiBaseUrl } from './api-client';
 
 const TOKEN_STORAGE_KEY = 'ebieshop_admin_token';
-const DEFAULT_API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 
 interface AuthContextValue {
   token: string | null;
@@ -65,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => {
     if (!token) return null;
     return createBackendClient({
-      baseUrl: DEFAULT_API_BASE,
+      baseUrl: resolveApiBaseUrl(),
       token,
     });
   }, [token]);

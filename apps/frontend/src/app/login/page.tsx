@@ -4,11 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
-import { createBackendClient } from '@/lib/api-client';
+import { createBackendClient, resolveApiBaseUrl } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
-
-const DEFAULT_API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,7 +26,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const client = createBackendClient({
-        baseUrl: DEFAULT_API_BASE,
+        baseUrl: resolveApiBaseUrl(),
         token: trimmed,
       });
       await client.listProducts();

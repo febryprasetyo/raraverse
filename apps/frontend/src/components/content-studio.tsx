@@ -20,6 +20,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardHeader } from './ui/card';
 import { StatePanel } from './ui/state-panel';
+import { resolveApiBaseUrl } from '@/lib/api-client';
 
 export interface ContentStudioProps {
   products: Product[];
@@ -70,22 +71,18 @@ const STATUS_BADGE_MAP: Record<
   FAILED: { label: 'Gagal Diproses', tone: 'danger' },
 };
 
-function getApiBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001').replace(/\/$/, '');
-}
-
 function resolveApiMediaUrl(pathOrUrl: string): string {
   if (/^https?:\/\//i.test(pathOrUrl) || pathOrUrl.startsWith('data:')) {
     return pathOrUrl;
   }
-  return `${getApiBaseUrl()}${pathOrUrl.startsWith('/') ? '' : '/'}${pathOrUrl}`;
+  return `${resolveApiBaseUrl()}${pathOrUrl.startsWith('/') ? '' : '/'}${pathOrUrl}`;
 }
 
 function resolveVideoUrl(videoR2Key: string): string {
   if (process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL) {
     return `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/${videoR2Key}`;
   }
-  return `${getApiBaseUrl()}/api/v1/assets/local-file/${videoR2Key}`;
+  return `${resolveApiBaseUrl()}/api/v1/assets/local-file/${videoR2Key}`;
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
