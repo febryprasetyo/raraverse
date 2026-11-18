@@ -1,5 +1,6 @@
 'use client';
 
+import { Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [tokenInput, setTokenInput] = useState('');
+  const [showToken, setShowToken] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -63,8 +65,8 @@ export default function LoginPage() {
           </div>
         </div>
         <CardHeader
-          title="Masuk ke Dasbor"
-          subtitle="Masukkan Admin Bearer Token (ADMIN_JWT_SECRET) untuk memverifikasi sesi."
+          title="Masuk ke Dashboard"
+          subtitle="Masukkan Admin Bearer Token dari konfigurasi backend untuk membuka kontrol kreator."
         />
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
           <div>
@@ -74,21 +76,46 @@ export default function LoginPage() {
             >
               Admin Bearer Token
             </label>
-            <input
-              id="admin-token-input"
-              type="password"
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="dev-admin-jwt-secret-minimum-32-chars"
-              className="mt-1.5 w-full rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-slate-400 focus:border-slate-900 focus:outline-none dark:focus:border-emerald-500"
-              required
-            />
+            <div className="relative mt-1.5">
+              <input
+                id="admin-token-input"
+                type={showToken ? 'text' : 'password'}
+                value={tokenInput}
+                onChange={(e) => {
+                  setTokenInput(e.target.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                placeholder="Masukkan minimal 16 karakter token admin"
+                aria-describedby="admin-token-help"
+                aria-invalid={Boolean(errorMsg)}
+                className="w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] py-2 pl-3 pr-11 text-sm text-[var(--text-primary)] placeholder-slate-500 transition-colors focus:border-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken((prev) => !prev)}
+                aria-label={showToken ? 'Sembunyikan token' : 'Tampilkan token'}
+                className="absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center rounded-r-xl text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              >
+                {showToken ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            <p id="admin-token-help" className="mt-1.5 text-[11px] text-[var(--text-muted)]">
+              Sesuai dengan nilai <code className="font-mono text-slate-300">ADMIN_JWT_SECRET</code> pada environment backend.
+            </p>
           </div>
 
           {errorMsg ? (
-            <p role="alert" className="text-xs font-medium text-rose-600 dark:text-rose-400">
+            <div
+              role="alert"
+              className="rounded-xl border border-rose-500/40 bg-rose-950/35 px-3 py-2 text-xs font-medium text-rose-200"
+            >
               {errorMsg}
-            </p>
+            </div>
           ) : null}
 
           <Button type="submit" className="w-full" disabled={submitting}>

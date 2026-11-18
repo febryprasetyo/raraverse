@@ -28,6 +28,16 @@ const STATUS_FILTERS: Array<'ALL' | ContentStatus> = [
   'REJECTED',
 ];
 
+const STATUS_LABELS: Record<'ALL' | ContentStatus, string> = {
+  ALL: 'Semua',
+  GENERATING_SCRIPT: 'Membuat Naskah',
+  PENDING_REVIEW: 'Menunggu Review',
+  APPROVED: 'Disetujui',
+  RENDERING_VIDEO: 'Sedang Render',
+  REJECTED: 'Ditolak',
+  FAILED: 'Gagal',
+};
+
 function resolveVideoUrl(videoR2Key: string): string {
   if (process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL) {
     return `${process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/${videoR2Key}`;
@@ -46,6 +56,7 @@ export function ContentGallery({
 }: ContentGalleryProps) {
   const [filter, setFilter] = useState<'ALL' | ContentStatus>('ALL');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const productMap = useMemo(
     () => new Map(products.map((p) => [p.id, p])),
@@ -76,16 +87,17 @@ export function ContentGallery({
             <Button
               key={s}
               size="sm"
+              aria-pressed={filter === s}
               variant={filter === s ? 'primary' : 'secondary'}
               onClick={() => setFilter(s)}
             >
-              {s}
+              {STATUS_LABELS[s]}
             </Button>
           ))}
         </div>
         <Link
           href="/studio"
-          className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
+          className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-canvas)]"
         >
           + Buat Konten Baru
         </Link>
@@ -101,11 +113,25 @@ export function ContentGallery({
           onRetry={onRetry}
         />
       ) : visibleAssets.length === 0 ? (
-        <StatePanel
-          status="empty"
-          title="Galeri konten masih kosong"
-          description="Generate konten baru dari Content Studio agar hasil render 9:16 muncul di sini."
-        />
+        assets.length > 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[var(--border-hairline)] bg-[var(--bg-surface)] px-6 py-12 text-center">
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              Tidak ada konten berstatus {STATUS_LABELS[filter]}
+            </p>
+            <p className="text-xs text-[var(--text-muted)]">
+              Coba pilih filter status lain atau tampilkan seluruh aset konten.
+            </p>
+            <Button size="sm" variant="secondary" onClick={() => setFilter('ALL')}>
+              Tampilkan Semua
+            </Button>
+          </div>
+        ) : (
+          <StatePanel
+            status="empty"
+            title="Galeri konten masih kosong"
+            description="Buat konten baru di Content Studio agar hasil render 9:16 muncul di sini."
+          />
+        )
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visibleAssets.map((asset) => {
@@ -126,7 +152,7 @@ export function ContentGallery({
                   ) : (
                     <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                       <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
-                        {asset.status}
+                        {STATUS_LABELS[asset.status]}
                       </p>
                       <p className="mt-2 text-xs text-slate-300">
                         {asset.scriptJson.hook}
@@ -146,7 +172,7 @@ export function ContentGallery({
                             : 'info'
                       }
                     >
-                      {asset.status}
+                      {STATUS_LABELS[asset.status]}
                     </Badge>
                     {asset.durationSec ? (
                       <span className="tabular-nums text-[11px] text-[var(--text-muted)]">
@@ -163,50 +189,85 @@ export function ContentGallery({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-hairline)] pt-3">
-                  {asset.status !== 'APPROVED' ? (
-                    <Button
-                      size="sm"
-                      disabled={isBusy}
-                      onClick={() =>
-                        void handleAction(asset.id, () =>
-                          onReview(asset.id, 'APPROVED')
-                        )
-                      }
+                  {confirmDeleteId === asset.id ? (
+                    <div
+                      role="group"
+                      aria-label={`Konfirmasi hapus aset ${asset.id.slice(0, 8)}`}
+                      className="flex w-full items-center justify-between gap-2"
                     >
-                      Approve
-                    </Button>
+                      <span className="text-xs font-medium text-rose-300">
+                        Hapus aset ini?
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={isBusy}
+                          onClick={() => setConfirmDeleteId(null)}
+                        >
+                          Batal
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={isBusy}
+                          onClick={() =>
+                            void handleAction(asset.id, async () => {
+                              await onDelete(asset.id);
+                              setConfirmDeleteId(null);
+                            })
+                          }
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
-                    <Link
-                      href="/scheduler"
-                      className="inline-flex items-center rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
-                    >
-                      Jadwalkan →
-                    </Link>
+                    <>
+                      {asset.status !== 'APPROVED' ? (
+                        <Button
+                          size="sm"
+                          disabled={isBusy}
+                          onClick={() =>
+                            void handleAction(asset.id, () =>
+                              onReview(asset.id, 'APPROVED')
+                            )
+                          }
+                        >
+                          Setujui
+                        </Button>
+                      ) : (
+                        <Link
+                          href="/scheduler"
+                          className="inline-flex items-center rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-canvas)]"
+                        >
+                          Jadwalkan →
+                        </Link>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={isBusy}
+                        onClick={() =>
+                          void handleAction(asset.id, () =>
+                            onReview(asset.id, 'REJECTED')
+                          )
+                        }
+                      >
+                        Tolak
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={`Hapus aset ${asset.id.slice(0, 8)}`}
+                        disabled={isBusy}
+                        onClick={() => setConfirmDeleteId(asset.id)}
+                        className="ml-auto text-rose-400 hover:bg-rose-950/40"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </>
                   )}
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={isBusy}
-                    onClick={() =>
-                      void handleAction(asset.id, () =>
-                        onReview(asset.id, 'REJECTED')
-                      )
-                    }
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label={`Hapus aset ${asset.id.slice(0, 8)}`}
-                    disabled={isBusy}
-                    onClick={() =>
-                      void handleAction(asset.id, () => onDelete(asset.id))
-                    }
-                    className="ml-auto text-rose-400 hover:bg-rose-950/40"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Button>
                 </div>
               </Card>
             );

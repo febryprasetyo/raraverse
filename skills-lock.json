@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "skills": {
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "commit": "f6b76575f949707b4e3c37cd86cb44b0b98643e8",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "b10eab0a9684cd09cf34c31ef04a3bf530a5f4404422f9c520d42372d670c7fc"
+    },
+    "review-ux-ui": {
+      "source": "pjt222/agent-almanac",
+      "commit": "60ac24eaa06e5d5226c7d0b9ff0a521de8aecdf7",
+      "sourceType": "github",
+      "skillPath": "skills/review-ux-ui/SKILL.md",
+      "computedHash": "4aa445659462e5f3029a7f8291f3c076209a5b8183625ed35ba9dbbde2bc38b3"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "commit": "f2cc36555984fbfb08f1dca037da2467578f33d2",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "9700c4f6c9460810a4158f3a6d3238d8ee58bc682e0aa7190c2c333cf6c666b1"
+    },
+    "ux-copy": {
+      "source": "anthropics/knowledge-work-plugins",
+      "commit": "e91a134584eb798bac7fb0379358006a2b63b965",
+      "sourceType": "github",
+      "skillPath": "design/skills/ux-copy/SKILL.md",
+      "computedHash": "107740b4daeea92f9bed76fb89ad55b7dbe6733af418baeb797e6d577fe6faeb"
+    },
+    "ux-principles": {
+      "source": "manutej/luxor-claude-marketplace",
+      "commit": "1861cc9720d5656410415e5c19b06bef3e4609e8",
+      "sourceType": "github",
+      "skillPath": "plugins/luxor-design-toolkit/skills/ux-principles/SKILL.md",
+      "computedHash": "26e66564ef135f132539ea72d52f55b31f1f0dc486b7f42f6d95b1b23b0bbbbf"
+    }
+  }
+}

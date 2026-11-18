@@ -20,6 +20,24 @@ const ALL_PLATFORMS: TargetPlatform[] = [
   'THREADS',
 ];
 
+const PLATFORM_LABELS: Record<TargetPlatform, string> = {
+  IG_REELS: 'Instagram Reels',
+  FB_REELS: 'Facebook Reels',
+  YT_SHORTS: 'YouTube Shorts',
+  SHOPEE_VIDEO: 'Shopee Video',
+  TIKTOK_STUDIO: 'TikTok Studio',
+  THREADS: 'Threads',
+};
+
+const JOB_STATUS_LABELS: Record<PublishJobRecord['status'], string> = {
+  QUEUED: 'Terjadwal',
+  PROCESSING: 'Sedang Diproses',
+  PUBLISHED: 'Tayang',
+  FAILED: 'Gagal',
+  NEEDS_MANUAL_LOGIN: 'Perlu Login Manual',
+  CANCELLED: 'Dibatalkan',
+};
+
 export interface SchedulerBoardProps {
   jobs: PublishJobRecord[];
   approvedAssets: ContentAsset[];
@@ -52,6 +70,7 @@ export function SchedulerBoard({
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   function togglePlatform(platform: TargetPlatform) {
     setSelectedPlatforms((prev) =>
@@ -67,12 +86,16 @@ export function SchedulerBoard({
     if (!assetId || selectedPlatforms.length === 0) return;
     setSubmitting(true);
     setActionError(null);
+    setActionSuccess(null);
     try {
       await onSchedule({
         contentAssetId: assetId,
         platforms: selectedPlatforms,
         visibility,
       });
+      setActionSuccess(
+        `Jadwal publish berhasil dibuat untuk ${selectedPlatforms.length} platform.`
+      );
     } catch (err) {
       setActionError(
         err instanceof Error ? err.message : 'Gagal menjadwalkan publish'
@@ -96,20 +119,31 @@ export function SchedulerBoard({
                 htmlFor="sched-asset"
                 className="block text-xs font-medium text-[var(--text-secondary)]"
               >
-                Aset Konten (APPROVED)
+                Aset Konten (Disetujui)
               </label>
               <select
                 id="sched-asset"
                 value={selectedAssetId || approvedAssets[0]?.id || ''}
                 onChange={(e) => setSelectedAssetId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                disabled={approvedAssets.length === 0}
+                aria-describedby={approvedAssets.length === 0 ? 'sched-asset-empty-help' : undefined}
+                className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {approvedAssets.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.id.slice(0, 8)} — {a.scriptJson.hook.slice(0, 45)}
-                  </option>
-                ))}
+                {approvedAssets.length === 0 ? (
+                  <option value="">Belum ada aset konten yang disetujui</option>
+                ) : (
+                  approvedAssets.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.id.slice(0, 8)} — {a.scriptJson.hook.slice(0, 45)}
+                    </option>
+                  ))
+                )}
               </select>
+              {approvedAssets.length === 0 ? (
+                <p id="sched-asset-empty-help" className="mt-1 text-[11px] text-amber-300">
+                  Setujui minimal satu video di Galeri Konten agar bisa dijadwalkan.
+                </p>
+              ) : null}
             </div>
             <div>
               <label
@@ -124,10 +158,10 @@ export function SchedulerBoard({
                 onChange={(e) =>
                   setVisibility(e.target.value as 'PUBLIC' | 'PRIVATE')
                 }
-                className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                className="mt-1 w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-canvas)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
               >
-                <option value="PUBLIC">PUBLIC (Produksi)</option>
-                <option value="PRIVATE">PRIVATE (Sandbox Fase 5)</option>
+                <option value="PUBLIC">Publik (Tayang Langsung)</option>
+                <option value="PRIVATE">Privat (Uji Coba)</option>
               </select>
             </div>
           </div>
@@ -145,13 +179,13 @@ export function SchedulerBoard({
                     type="button"
                     aria-pressed={checked}
                     onClick={() => togglePlatform(platform)}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                       checked
-                        ? 'border-slate-900 bg-slate-900 text-white dark:border-emerald-500 dark:bg-emerald-600'
+                        ? 'border-emerald-500 bg-emerald-600 text-white'
                         : 'border-[var(--border-hairline)] bg-[var(--bg-canvas)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'
                     }`}
                   >
-                    {platform}
+                    {PLATFORM_LABELS[platform]}
                   </button>
                 );
               })}
@@ -166,9 +200,25 @@ export function SchedulerBoard({
               selectedPlatforms.length === 0
             }
           >
-            {submitting ? 'Menjadwalkan...' : 'Masukkan ke Antrean BullMQ'}
+            {submitting ? 'Menjadwalkan...' : 'Jadwalkan Publish'}
           </Button>
         </form>
+        {actionSuccess ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-emerald-500/40 bg-emerald-950/50 px-4 py-3 text-xs text-emerald-200"
+          >
+            <span>{actionSuccess}</span>
+            <button
+              type="button"
+              onClick={() => setActionSuccess(null)}
+              className="cursor-pointer font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              Tutup
+            </button>
+          </div>
+        ) : null}
         {actionError ? (
           <div
             role="alert"
@@ -203,7 +253,7 @@ export function SchedulerBoard({
         />
       ) : (
         <Card>
-          <CardHeader title="Daftar Publish Jobs" />
+          <CardHeader title="Daftar Jadwal Publish" />
           <div className="divide-y divide-[var(--border-hairline)]">
             {jobs.map((job) => (
               <div
@@ -212,7 +262,7 @@ export function SchedulerBoard({
               >
                 <div>
                   <p className="text-sm font-semibold text-[var(--text-primary)]">
-                    {job.platform}{' '}
+                    {PLATFORM_LABELS[job.platform]}{' '}
                     <span className="font-mono text-xs text-[var(--text-muted)]">
                       ({job.executionMode})
                     </span>
@@ -222,7 +272,7 @@ export function SchedulerBoard({
                     Percobaan: {job.attemptCount}
                   </p>
                   {job.lastError ? (
-                    <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                    <p className="mt-1 text-xs text-rose-400">
                       {job.lastError}
                     </p>
                   ) : null}
@@ -237,7 +287,7 @@ export function SchedulerBoard({
                         : 'info'
                   }
                 >
-                  {job.status}
+                  {JOB_STATUS_LABELS[job.status]}
                 </Badge>
               </div>
             ))}
