@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: ebieshop-postgres
+    container_name: raraverse-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ebieshop
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ebieshop-redis
+    container_name: raraverse-redis
     restart: unless-stopped
     command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
     ports:
@@ -36,7 +36,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: ebieshop-backend-dev
+    container_name: raraverse-backend-dev
     restart: unless-stopped
     depends_on:
       postgres:
@@ -66,12 +66,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend.dev
-    container_name: ebieshop-frontend-dev
+    container_name: raraverse-frontend-dev
     restart: unless-stopped
     depends_on:
       - backend
     environment:
       NODE_ENV: development
+      INTERNAL_API_URL: http://backend:3001
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3001
       WATCHPACK_POLLING: 'true'
     ports:
@@ -85,7 +86,7 @@ services:
 
   minio:
     image: cgr.dev/chainguard/minio:latest
-    container_name: ebieshop-minio
+    container_name: raraverse-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
